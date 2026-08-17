@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: ats-resume-scanner-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: ALLOWED_ORIGINS
+        value: https://atikul-dipto.github.io/ats-resume-scanner
