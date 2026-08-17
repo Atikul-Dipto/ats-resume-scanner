@@ -1,5 +1,8 @@
 # ATS Resume Scanner
 
+**Live demo**: https://atikul-dipto.github.io/ats-resume-scanner/
+(backend is on Render's free tier — the first request after idle can take ~30–50s to wake up)
+
 Scans a resume for ATS (Applicant Tracking System) compatibility — formatting risks, missing
 sections, weak content, keyword gaps against a target job description — then searches live job
 boards for roles that match the candidate's extracted title, skills, and experience.
