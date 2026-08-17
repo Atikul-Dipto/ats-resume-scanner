@@ -4,6 +4,12 @@ from pydantic import BaseModel
 class FormattingIssue(BaseModel):
     severity: str  # "critical" | "warning" | "info"
     message: str
+    location: str | None = None
+
+
+class FlaggedLine(BaseModel):
+    text: str
+    reasons: list[str]
 
 
 class SectionCheck(BaseModel):
@@ -36,6 +42,7 @@ class AnalyzeResponse(BaseModel):
     keywords: KeywordMatch
     profile: ExtractedProfile
     suggestions: list[str]
+    flagged_lines: list[FlaggedLine]
 
 
 class JobListing(BaseModel):

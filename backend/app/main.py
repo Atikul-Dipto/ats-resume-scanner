@@ -4,6 +4,7 @@ from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.analysis.ats_scorer import score_resume
+from app.analysis.content_flags import find_weak_bullets
 from app.analysis.formatting_checker import check_formatting
 from app.analysis.keyword_matcher import match_keywords
 from app.analysis.profile_extractor import (
@@ -64,6 +65,7 @@ async def analyze_resume(
     formatting_issues = check_formatting(parsed)
     keyword_result = match_keywords(text, job_description)
     scores = score_resume(text, sections, formatting_issues, keyword_result, bool(job_description))
+    flagged_lines = find_weak_bullets(text)
 
     profile = {
         "emails": extract_emails(text),
@@ -80,6 +82,7 @@ async def analyze_resume(
         "sections": sections,
         "keywords": keyword_result,
         "profile": profile,
+        "flagged_lines": flagged_lines,
     }
 
 

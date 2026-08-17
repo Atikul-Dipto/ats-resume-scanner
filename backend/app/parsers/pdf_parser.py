@@ -1,3 +1,5 @@
+import io
+
 import pdfplumber
 
 
@@ -14,27 +16,40 @@ def _detect_multi_column(page) -> bool:
 
 def parse_pdf(file_bytes: bytes) -> dict:
     text_chunks = []
+    pages_info = []
     has_images = False
     has_tables = False
     multi_column_pages = 0
     page_count = 0
 
-    with pdfplumber.open(__import__("io").BytesIO(file_bytes)) as pdf:
+    with pdfplumber.open(io.BytesIO(file_bytes)) as pdf:
         page_count = len(pdf.pages)
-        for page in pdf.pages:
+        for i, page in enumerate(pdf.pages, start=1):
             page_text = page.extract_text() or ""
             text_chunks.append(page_text)
 
-            if page.images:
+            page_has_images = bool(page.images)
+            page_has_tables = bool(page.find_tables())
+            page_multi_column = _detect_multi_column(page)
+
+            if page_has_images:
                 has_images = True
-            if page.find_tables():
+            if page_has_tables:
                 has_tables = True
-            if _detect_multi_column(page):
+            if page_multi_column:
                 multi_column_pages += 1
+
+            pages_info.append({
+                "page_number": i,
+                "has_images": page_has_images,
+                "has_tables": page_has_tables,
+                "multi_column": page_multi_column,
+            })
 
     return {
         "text": "\n".join(text_chunks),
         "page_count": page_count,
+        "pages": pages_info,
         "has_images": has_images,
         "has_tables": has_tables,
         "multi_column": multi_column_pages > 0,

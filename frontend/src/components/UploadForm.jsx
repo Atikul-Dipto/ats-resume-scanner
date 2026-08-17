@@ -48,17 +48,17 @@ export default function UploadForm({ onSubmit, loading }) {
           onChange={(e) => pickFile(e.target.files?.[0])}
         />
         {file ? (
-          <p className="dropzone-file">{file.name}</p>
+          <p className="dropzone-file">✓ {file.name}</p>
         ) : (
           <>
-            <p>Drag & drop your resume here</p>
+            <p className="dropzone-title">DROP RESUME TO BEGIN SCAN</p>
             <p className="dropzone-hint">or click to browse — .pdf or .docx, max 5MB</p>
           </>
         )}
       </div>
 
       <label className="jd-label" htmlFor="job-description">
-        Job description <span>(optional — improves keyword scoring)</span>
+        Target job description <span>(optional — improves keyword scoring)</span>
       </label>
       <textarea
         id="job-description"
@@ -69,7 +69,7 @@ export default function UploadForm({ onSubmit, loading }) {
       />
 
       <button type="submit" disabled={!file || loading}>
-        {loading ? "Analyzing..." : "Scan resume"}
+        {loading ? "Analyzing..." : "Run ATS Scan"}
       </button>
     </form>
   );

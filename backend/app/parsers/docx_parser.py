@@ -20,6 +20,7 @@ def parse_docx(file_bytes: bytes) -> dict:
     return {
         "text": text,
         "page_count": None,
+        "pages": [],  # page-level breakdown isn't available for docx without rendering
         "has_images": has_images,
         "has_tables": has_tables,
         "multi_column": False,  # not detectable from docx structure without rendering

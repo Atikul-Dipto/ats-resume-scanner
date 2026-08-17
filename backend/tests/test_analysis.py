@@ -1,3 +1,4 @@
+from app.analysis.content_flags import find_weak_bullets
 from app.analysis.formatting_checker import check_formatting
 from app.analysis.keyword_matcher import match_keywords
 from app.analysis.profile_extractor import (
@@ -88,3 +89,27 @@ def test_match_keywords_with_job_description():
     result = match_keywords(SAMPLE_RESUME, jd)
     assert "python" in result["matched"]
     assert "tableau" in result["missing"]
+
+
+def test_formatting_issues_include_page_location():
+    issues = check_formatting({
+        "text": SAMPLE_RESUME * 3,
+        "pages": [
+            {"page_number": 1, "has_images": False, "has_tables": False, "multi_column": False},
+            {"page_number": 2, "has_images": True, "has_tables": False, "multi_column": False},
+        ],
+        "has_images": True,
+        "has_tables": False,
+        "multi_column": False,
+        "in_header_footer_text": None,
+        "page_count": 2,
+    })
+    image_issue = next(i for i in issues if "Images" in i["message"])
+    assert image_issue["location"] == "Page 2"
+
+
+def test_find_weak_bullets_flags_missing_verb_and_number():
+    text = "- worked on stuff without a metric\n- Led migration to Power BI, saving 10 hours per week."
+    flagged = find_weak_bullets(text)
+    assert any("worked on stuff" in f["text"] for f in flagged)
+    assert not any("Led migration" in f["text"] for f in flagged)

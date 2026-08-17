@@ -1,9 +1,29 @@
-export default function ScoreGauge({ score, label = "ATS Score" }) {
+import { useEffect, useState } from "react";
+
+export default function ScoreGauge({ score, label = "ATS SCORE" }) {
   const radius = 54;
   const circumference = 2 * Math.PI * radius;
-  const clamped = Math.max(0, Math.min(100, score));
-  const offset = circumference - (clamped / 100) * circumference;
-  const tier = clamped >= 80 ? "good" : clamped >= 55 ? "fair" : "poor";
+  const target = Math.max(0, Math.min(100, score));
+
+  const [displayed, setDisplayed] = useState(0);
+
+  useEffect(() => {
+    let raf;
+    const start = performance.now();
+    const durationMs = 900;
+
+    const tick = (now) => {
+      const progress = Math.min((now - start) / durationMs, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayed(target * eased);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [target]);
+
+  const offset = circumference - (displayed / 100) * circumference;
+  const tier = target >= 80 ? "good" : target >= 55 ? "fair" : "poor";
 
   return (
     <div className={`score-gauge tier-${tier}`}>
@@ -20,7 +40,7 @@ export default function ScoreGauge({ score, label = "ATS Score" }) {
         />
       </svg>
       <div className="gauge-center">
-        <span className="gauge-value">{Math.round(clamped)}</span>
+        <span className="gauge-value">{Math.round(displayed)}</span>
         <span className="gauge-label">{label}</span>
       </div>
     </div>
