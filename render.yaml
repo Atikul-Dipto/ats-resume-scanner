@@ -8,4 +8,4 @@ services:
     healthCheckPath: /api/health
     envVars:
       - key: ALLOWED_ORIGINS
-        value: https://atikul-dipto.github.io/ats-resume-scanner
+        value: https://atikul-dipto.github.io
