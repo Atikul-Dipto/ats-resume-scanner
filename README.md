@@ -32,9 +32,23 @@ boards for roles that match the candidate's extracted title, skills, and experie
 No scraping — job-board Terms of Service generally prohibit it, and it's fragile. Everything here
 goes through documented, public APIs.
 
+**Matching encoder** (`backend/app/matching`) — see the [model card](backend/app/matching/MODEL_CARD.md)
+for full details, training data, and honestly-documented limitations.
+- A TensorFlow-trained two-tower (shared-encoder) neural network embeds resumes and job postings
+  into one vector space, so cosine similarity re-ranks the keyword-based job search above — it
+  can surface semantically related roles the keyword heuristic misses (e.g. a "BI Analyst" posting
+  for a "Data Analyst" resume with no literal skill-string overlap).
+- Trained on real job postings (self-supervised: a posting's title vs. its own description) plus
+  an accumulating, fully anonymized log of real searches (title + skills only — never raw resume
+  text or contact info). Retrain with `python -m app.matching.train` as that log grows.
+- TensorFlow is a **training-only** dependency (`requirements-train.txt`). The trained model is
+  exported to plain NumPy (`app/matching/infer.py`), which is what the deployed API actually
+  loads — keeping TensorFlow's memory footprint off the free-tier production container.
+
 ## Stack
 
-- **Backend**: FastAPI, pdfplumber, python-docx, scikit-learn, httpx
+- **Backend**: FastAPI, pdfplumber, python-docx, scikit-learn, NumPy, httpx
+- **Matching model training**: TensorFlow/Keras (dev-only, see above)
 - **Frontend**: React + Vite
 
 ## Running locally

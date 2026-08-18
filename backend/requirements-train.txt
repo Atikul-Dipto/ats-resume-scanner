@@ -1,0 +1,5 @@
+# Training-only dependencies for app/matching/train.py.
+# NOT installed in production (see backend/Dockerfile) — the deployed API
+# loads the exported NumPy artifacts via app/matching/infer.py instead,
+# so TensorFlow's memory footprint never reaches the live container.
+tensorflow==2.21.0

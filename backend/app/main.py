@@ -17,6 +17,7 @@ from app.analysis.profile_extractor import (
 )
 from app.analysis.section_detector import detect_sections
 from app.jobs.aggregator import search_jobs
+from app.matching.store import log_event
 from app.parsers.docx_parser import parse_docx
 from app.parsers.pdf_parser import parse_pdf
 
@@ -94,4 +95,22 @@ async def jobs_search(
 ):
     skill_list = [s.strip() for s in skills.split(",") if s.strip()]
     results = await search_jobs(query, skill_list, location)
+
+    # Best-effort: this is the anonymized flywheel data used to retrain the
+    # matching encoder later (see app/matching/train.py). Never let logging
+    # failures affect the actual search response.
+    try:
+        for job in results[:3]:
+            log_event(
+                resume_title=query,
+                skills=skill_list,
+                years_experience=None,
+                job_title=job["title"],
+                job_company=job["company"],
+                job_source=job["source"],
+                relevance_score=job["relevance_score"],
+            )
+    except Exception:
+        pass
+
     return {"query": query, "results": results}

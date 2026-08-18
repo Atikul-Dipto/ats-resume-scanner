@@ -4,6 +4,14 @@ import re
 import httpx
 
 from app.jobs.sources import fetch_adzuna, fetch_arbeitnow, fetch_remotive, fetch_themuse
+from app.matching.infer import get_encoder
+
+# How much one embedding-similarity point (0-1 range) counts against one
+# keyword-overlap point (integer counts). Keeps the trained encoder as an
+# enhancement layered on the heuristic, not a replacement — it can surface
+# jobs the keyword match misses (e.g. "BI Analyst" for a "Data Analyst"
+# resume) without letting a spurious semantic match drown out real overlap.
+EMBEDDING_WEIGHT = 5.0
 
 WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z+.#]{1,}")
 STOPWORDS = {"and", "the", "for", "with", "of", "in", "to", "a", "an", "on", "at", "or"}
@@ -45,6 +53,19 @@ async def search_jobs(query: str, skills: list[str], location: str = "") -> list
     terms = _tokenize(query) | {s.lower() for s in skills}
     for job in unique_jobs:
         job["relevance_score"] = _relevance(job, terms)
+
+    encoder = get_encoder()
+    if encoder is not None and unique_jobs:
+        anchor_text = f"{query} skills: {', '.join(skills)}"
+        anchor_emb = encoder.embed(anchor_text)
+        job_texts = [
+            f"{j['title']} at {j.get('company', '')}. {j.get('description', '')[:500]}"
+            for j in unique_jobs
+        ]
+        job_embs = encoder.embed_batch(job_texts)
+        similarities = job_embs @ anchor_emb
+        for job, similarity in zip(unique_jobs, similarities):
+            job["relevance_score"] += max(float(similarity), 0.0) * EMBEDDING_WEIGHT
 
     if terms:
         unique_jobs = [j for j in unique_jobs if j["relevance_score"] > 0]
