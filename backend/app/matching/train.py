@@ -22,7 +22,7 @@ from tensorflow import keras
 
 from app.matching.data import build_pairs, fetch_training_jobs
 from app.matching.model import InBatchContrastiveModel, build_encoder, build_vectorizer
-from app.matching.store import fetch_events
+from app.matching.store import fetch_events, fetch_resume_scans
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -49,6 +49,25 @@ def _augment_with_usage_events(pairs: list[tuple[str, str]]) -> list[tuple[str, 
     return pairs
 
 
+def _augment_with_resume_scans(pairs: list[tuple[str, str]]) -> list[tuple[str, str]]:
+    """Folds in real (anonymized) resume scans, independent of whether the
+    user went on to search jobs. Title and skill-list are two views of the
+    same real profile — same self-supervised structure as the job-posting
+    bootstrap (title vs. description), just from the resume side instead."""
+    scans = fetch_resume_scans()
+    added = 0
+    for scan in scans:
+        if not scan["skills"] or not scan["title"]:
+            continue
+        anchor = scan["title"].strip()
+        positive = f"skills: {', '.join(scan['skills'])}"
+        if len(anchor) > 2 and len(positive) > 10:
+            pairs.append((anchor, positive))
+            added += 1
+    logger.info("Folded in %d real resume scans (out of %d logged).", added, len(scans))
+    return pairs
+
+
 async def main():
     random.seed(SEED)
     tf.random.set_seed(SEED)
@@ -59,6 +78,7 @@ async def main():
 
     pairs = build_pairs(jobs)
     pairs = _augment_with_usage_events(pairs)
+    pairs = _augment_with_resume_scans(pairs)
     random.shuffle(pairs)
     logger.info("Training on %d (anchor, positive) pairs.", len(pairs))
 

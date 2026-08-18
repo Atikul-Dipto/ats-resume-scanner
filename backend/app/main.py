@@ -17,7 +17,7 @@ from app.analysis.profile_extractor import (
 )
 from app.analysis.section_detector import detect_sections
 from app.jobs.aggregator import search_jobs
-from app.matching.store import log_event
+from app.matching.store import log_event, log_resume_scan
 from app.parsers.docx_parser import parse_docx
 from app.parsers.pdf_parser import parse_pdf
 
@@ -76,6 +76,23 @@ async def analyze_resume(
         "years_experience": extract_years_experience(text),
         "current_title": extract_current_title(text),
     }
+
+    # Best-effort: anonymized flywheel data for retraining the matching
+    # encoder (see app/matching/train.py). Never let logging failures
+    # affect the actual analysis response.
+    try:
+        log_resume_scan(
+            title=profile["current_title"],
+            skills=profile["skills"],
+            years_experience=profile["years_experience"],
+            ats_score=scores["ats_score"],
+            formatting_score=scores["formatting_score"],
+            content_score=scores["content_score"],
+            keyword_score=scores["keyword_score"],
+            had_job_description=bool(job_description),
+        )
+    except Exception:
+        pass
 
     return {
         **scores,

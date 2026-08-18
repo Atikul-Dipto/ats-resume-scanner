@@ -1,7 +1,14 @@
 import numpy as np
 
 from app.matching.infer import cosine_similarity, get_encoder
-from app.matching.store import DB_PATH, event_count, fetch_events, log_event
+from app.matching.store import (
+    event_count,
+    fetch_events,
+    fetch_resume_scans,
+    log_event,
+    log_resume_scan,
+    resume_scan_count,
+)
 
 
 def test_encoder_loads_from_committed_artifacts():
@@ -51,3 +58,45 @@ def test_log_event_and_fetch_events_roundtrip(tmp_path, monkeypatch):
     assert events[0]["skills"] == ["python", "sql"]
     assert events[0]["job_company"] == "Acme"
     assert event_count() == 1
+
+
+def test_log_resume_scan_and_fetch_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.matching.store.DB_PATH", tmp_path / "events.db")
+    assert resume_scan_count() == 0
+
+    log_resume_scan(
+        title="Data Analyst",
+        skills=["python", "sql"],
+        years_experience=4.0,
+        ats_score=78.0,
+        formatting_score=100.0,
+        content_score=67.0,
+        keyword_score=36.2,
+        had_job_description=True,
+    )
+
+    scans = fetch_resume_scans()
+    assert len(scans) == 1
+    assert scans[0]["title"] == "Data Analyst"
+    assert scans[0]["skills"] == ["python", "sql"]
+    assert scans[0]["ats_score"] == 78.0
+    assert scans[0]["had_job_description"] is True
+    assert resume_scan_count() == 1
+
+
+def test_resume_scan_and_match_event_tables_are_independent(tmp_path, monkeypatch):
+    monkeypatch.setattr("app.matching.store.DB_PATH", tmp_path / "events.db")
+
+    log_resume_scan(
+        title="Data Analyst",
+        skills=["python"],
+        years_experience=None,
+        ats_score=50.0,
+        formatting_score=50.0,
+        content_score=50.0,
+        keyword_score=50.0,
+        had_job_description=False,
+    )
+
+    assert resume_scan_count() == 1
+    assert event_count() == 0

@@ -35,10 +35,16 @@ data exists anywhere. Training data is honestly limited to:
    description is the positive (longer, job-like text) — two views of the
    *same* real posting. This teaches the encoder which titles/skills/
    descriptions cluster together, without fabricating any label.
-2. **Usage flywheel (accumulates over time)**: every real `/api/jobs/search`
-   call logs the anonymized query (title + skills — never raw resume text,
-   name, email, or phone) and its top matches to `backend/data/events.db`.
-   `train.py` folds these in as additional pairs on the next retrain.
+2. **Usage flywheel (accumulates over time)**, two independent sources, both
+   in `backend/data/events.db`, both anonymized — never raw resume text,
+   name, email, or phone:
+   - `match_events`, logged from `/api/jobs/search`: the query (title +
+     skills) and its top matches.
+   - `resume_scans`, logged from `/api/analyze`: title + skills + years of
+     experience + the resulting ATS scores, one row per scan — captures
+     every scan, not only the ones that go on to search jobs.
+
+   `train.py` folds both in as additional pairs on the next retrain.
 
 Last training run: **119 pairs** from ~120 unique postings, in-batch
 retrieval accuracy 1.00 after 12 epochs. That accuracy number is optimistic
