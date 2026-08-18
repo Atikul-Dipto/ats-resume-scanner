@@ -52,6 +52,7 @@ class JobListing(BaseModel):
     url: str
     source: str
     relevance_score: float
+    is_worldwide_remote: bool
 
 
 class JobSearchResponse(BaseModel):

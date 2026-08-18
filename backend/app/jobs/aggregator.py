@@ -16,9 +16,20 @@ EMBEDDING_WEIGHT = 5.0
 WORD_RE = re.compile(r"[a-zA-Z][a-zA-Z+.#]{1,}")
 STOPWORDS = {"and", "the", "for", "with", "of", "in", "to", "a", "an", "on", "at", "or"}
 
+# Conservative on purpose: "remote" alone is often still geo-restricted
+# (e.g. "Remote - US only"), which would be misleading to flag as open to
+# a Bangladeshi applicant. Only phrases that explicitly signal no
+# geographic restriction count.
+WORLDWIDE_REMOTE_MARKERS = ("worldwide", "anywhere", "global")
+
 
 def _tokenize(text: str) -> set[str]:
     return {w for w in WORD_RE.findall(text.lower()) if w not in STOPWORDS}
+
+
+def _is_worldwide_remote(location: str) -> bool:
+    lowered = (location or "").lower()
+    return any(marker in lowered for marker in WORLDWIDE_REMOTE_MARKERS)
 
 
 def _relevance(job: dict, terms: set[str]) -> float:
@@ -75,6 +86,7 @@ async def search_jobs(query: str, skills: list[str], location: str = "") -> list
     max_score = max((j["relevance_score"] for j in unique_jobs), default=0) or 1
     for job in unique_jobs:
         job["relevance_score"] = round(min(job["relevance_score"] / max_score, 1.0) * 100, 1)
+        job["is_worldwide_remote"] = _is_worldwide_remote(job.get("location", ""))
         job.pop("description", None)
 
     return unique_jobs[:30]
