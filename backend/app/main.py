@@ -17,7 +17,7 @@ from app.analysis.profile_extractor import (
 )
 from app.analysis.section_detector import detect_sections
 from app.jobs.aggregator import search_jobs
-from app.matching.store import log_event, log_resume_scan
+from app.matching.store import event_count, log_event, log_resume_scan, resume_scan_count
 from app.parsers.docx_parser import parse_docx
 from app.parsers.pdf_parser import parse_pdf
 
@@ -38,6 +38,15 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/api/stats")
+async def stats():
+    """Aggregate counts only — no per-scan or per-search detail exposed here."""
+    return {
+        "resume_scans": resume_scan_count(),
+        "job_search_events": event_count(),
+    }
 
 
 @app.post("/api/analyze")
