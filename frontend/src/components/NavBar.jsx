@@ -3,16 +3,14 @@ import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
 import ThemeToggle from "./ThemeToggle.jsx";
 
+const BRAND = `${import.meta.env.BASE_URL}brand/`;
+
+// Light and dark versions of the wordmark; CSS shows the one matching the theme.
 export function Logo() {
   return (
-    <span className="logo" aria-label="Prottoy">
-      <span className="logo__mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32" width="18" height="18">
-          <path d="M10 25V7h7a6 6 0 0 1 0 12h-4" fill="none" stroke="currentColor" strokeWidth="3.4"
-            strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </span>
-      <span className="logo__text">Prottoy</span>
+    <span className="logo">
+      <img className="logo__img logo__img--light" src={`${BRAND}prottoy-logo.png`} alt="Prottoy" width="135" height="32" />
+      <img className="logo__img logo__img--dark" src={`${BRAND}prottoy-logo-dark.png`} alt="" aria-hidden="true" width="135" height="32" />
     </span>
   );
 }

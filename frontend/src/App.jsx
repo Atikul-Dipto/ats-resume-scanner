@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NavBar, { Logo } from "./components/NavBar.jsx";
+import PaperField from "./components/PaperField.jsx";
 import AdminJobsPage from "./pages/AdminJobsPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import BuilderPage from "./pages/BuilderPage.jsx";
@@ -27,6 +28,7 @@ export default function App() {
   return (
     <>
       <NavBar mode={mode} onModeChange={setMode} />
+      {pathname === "/scan" && <PaperField />}
 
       <main className={`app ${layout}`}>
         {/* Keyed by path so every navigation plays the page-enter motion. */}
