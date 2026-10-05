@@ -4,6 +4,7 @@ from sqlalchemy import text
 from starlette.concurrency import run_in_threadpool
 
 from app.core.cache import get_cache
+from app.core.config import get_settings
 from app.db.session import get_engine
 from app.matching.store import event_count, resume_scan_count
 
@@ -26,6 +27,16 @@ def _db_ok() -> bool:
         return True
     except Exception:
         return False
+
+
+@router.get("/meta")
+async def meta():
+    """Deployment facts the UI needs to be honest with users."""
+    settings = get_settings()
+    return {
+        "persistent_storage": settings.persistent_storage,
+        "admin_configured": bool(settings.admin_emails_set),
+    }
 
 
 @router.get("/ready")

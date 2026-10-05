@@ -3,6 +3,7 @@ import { adminJobs } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { ChipInput } from "../builder/fields.jsx";
 import { DISCIPLINES, EMPLOYMENT_TYPES, WORKPLACES, sourceLabel } from "../jobs/format.js";
+import StorageNotice from "../components/StorageNotice.jsx";
 
 const EMPTY = {
   title: "", company: "", location: "", discipline: "data", employment_type: "full_time", workplace: "onsite",
@@ -155,6 +156,7 @@ export default function AdminJobsPage() {
         <p>Post local jobs, hide imported ones, and refresh the remote catalog.</p>
       </header>
 
+      <StorageNotice />
       <div className="admin-toolbar hud-panel">
         <div className="discipline-chips">
           <button type="button" className={`filter-chip ${source === "local" ? "is-active" : ""}`} onClick={() => setSource("local")}>Posted here</button>

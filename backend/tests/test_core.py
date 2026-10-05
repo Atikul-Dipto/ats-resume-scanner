@@ -12,6 +12,7 @@ from app.core.security import (
     create_access_token,
     decode_access_token,
     hash_password,
+    signing_key,
     verify_password,
 )
 
@@ -38,7 +39,7 @@ def test_access_token_roundtrip():
 
 
 def test_expired_and_tampered_tokens_are_rejected():
-    secret = get_settings().jwt_secret
+    secret = signing_key()
     expired = jwt.encode(
         {"sub": "user-123", "exp": datetime.now(UTC) - timedelta(minutes=1)}, secret, algorithm="HS256"
     )
@@ -56,12 +57,31 @@ def test_postgres_urls_are_rewritten_to_psycopg3_driver():
     assert Settings(database_url="sqlite:///x.db").sqlalchemy_url == "sqlite:///x.db"
 
 
-def test_production_refuses_default_jwt_secret():
-    with pytest.raises(ValueError, match="JWT_SECRET"):
-        Settings(environment="production", jwt_secret=DEV_JWT_SECRET)
+def test_production_rejects_weak_secret_but_allows_unset():
     with pytest.raises(ValueError, match="32"):
         Settings(environment="production", jwt_secret="too-short")
     Settings(environment="production", jwt_secret="x" * 32)
+    Settings(environment="production")  # unset: a random key is generated and stored
+
+
+def test_unset_secret_uses_generated_db_key_never_the_public_default():
+    key = signing_key()
+    assert key != DEV_JWT_SECRET and len(key) >= 32
+    assert signing_key() == key  # stable
+    forged = jwt.encode({"sub": "user-123"}, DEV_JWT_SECRET, algorithm="HS256")
+    assert decode_access_token(forged) is None
+
+
+def test_configured_secret_takes_precedence(monkeypatch):
+    monkeypatch.setenv("JWT_SECRET", "y" * 40)
+    get_settings.cache_clear()
+    assert signing_key() == "y" * 40
+
+
+def test_persistent_storage_detection():
+    assert Settings(database_url="sqlite:///x.db").persistent_storage is True  # local dev
+    assert Settings(database_url="sqlite:///x.db", render=True).persistent_storage is False
+    assert Settings(database_url="postgresql://u:p@h/db", render=True).persistent_storage is True
 
 
 def test_parse_rate():

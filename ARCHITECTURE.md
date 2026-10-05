@@ -360,7 +360,7 @@ erDiagram
 |---|---|
 | Credential stuffing / brute force | `RATE_LIMIT_AUTH`. Uniform 401s, and a dummy hash check for unknown emails so response timing doesn't reveal which accounts exist. |
 | Password theft from a DB leak | scrypt (N=2¹⁴, r=8, p=1) with a per-password salt; constant-time compare |
-| Token forgery | HS256 with a 32+ character secret. In production the app refuses to boot with the dev default. |
+| Token forgery | HS256. `JWT_SECRET` if configured (32+ chars enforced); otherwise a random key generated once and stored in the database (`app_secrets`), so a deploy that forgot the env var is still secure — the public dev default is never used to sign. |
 | Job-board abuse | Posting is admin-only (env-configured). Apply links must be `http(s)` or `mailto` (validated on the API, checked again in the UI) so a `javascript:` URL can't be planted; imported descriptions are stripped to plain text and rendered as text. |
 | IDOR on resumes | Every query is scoped by `user_id`. Foreign resumes return 404, not 403. |
 | Lost updates | Version compare-and-swap (409) |
@@ -444,6 +444,10 @@ browser flow end to end:
 
 ## 12. Known limitations
 
+- **No permanent database until `DATABASE_URL` is set:** without it the API
+  uses SQLite, which Render's free tier wipes on every restart. `/api/meta`
+  reports this and the UI warns users on the account, saved-resume and admin
+  pages instead of implying their data is safe.
 - **Free-tier cold starts:** the first request after idle takes 30–50 s. The
   client tells the user the server may be waking up.
 - **Importer:** heuristic, as resume formats vary widely. The UI asks users to

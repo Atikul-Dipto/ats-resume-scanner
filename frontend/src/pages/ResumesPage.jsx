@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { auth as authApi, resumes } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { isBlank, loadDraft } from "../builder/model.js";
+import StorageNotice from "../components/StorageNotice.jsx";
 
 const tierOf = (score) => (score >= 80 ? "good" : score >= 55 ? "fair" : "poor");
 const formatWhen = (iso) =>
@@ -76,6 +77,7 @@ export default function ResumesPage() {
         <p>Signed in as {user.email}. Keep one resume per target role and tailor each to its job description.</p>
       </header>
 
+      <StorageNotice />
       <div className="resumes-actions">
         <button type="button" onClick={createBlank} disabled={busy}>+ New resume</button>
         {hasDraft && (

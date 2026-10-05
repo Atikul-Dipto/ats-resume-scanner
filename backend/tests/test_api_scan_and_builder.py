@@ -140,6 +140,16 @@ def test_health_ready_stats(client):
     assert client.get("/api/stats").json() == {"resume_scans": 0, "job_search_events": 0}
 
 
+def test_meta_reports_storage_and_admin(client, monkeypatch):
+    from app.core.config import get_settings
+
+    assert client.get("/api/meta").json() == {"persistent_storage": True, "admin_configured": True}
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.setenv("ADMIN_EMAILS", "")
+    get_settings.cache_clear()
+    assert client.get("/api/meta").json() == {"persistent_storage": False, "admin_configured": False}
+
+
 def test_cors_allows_configured_origin_only(client):
     ok = client.options("/api/builder/score", headers={
         "Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST",

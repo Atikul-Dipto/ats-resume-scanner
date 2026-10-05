@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext.jsx";
+import StorageNotice from "../components/StorageNotice.jsx";
 
 export default function AuthPage() {
   const { signIn } = useAuth();
@@ -40,6 +41,7 @@ export default function AuthPage() {
         </p>
       </header>
 
+      <StorageNotice />
       <form className="auth-form hud-panel" onSubmit={handleSubmit}>
         <label className="field">
           <span className="field-label">Email</span>

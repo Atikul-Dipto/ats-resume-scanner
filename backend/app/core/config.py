@@ -27,7 +27,9 @@ class Settings(BaseSettings):
     # correct for a single instance. Set it before running >1 API instance.
     redis_url: str | None = None
 
-    # Auth
+    # Auth. Leave JWT_SECRET unset to have the app generate a random secret
+    # and keep it in the database (see core/security.py) — secure with zero
+    # configuration, and it lives exactly as long as the accounts it signs for.
     jwt_secret: str = DEV_JWT_SECRET
     jwt_expire_minutes: int = 60 * 24 * 7
     max_resumes_per_user: int = 25
@@ -70,6 +72,10 @@ class Settings(BaseSettings):
     # Anonymized usage logging for retraining the matching encoder.
     events_enabled: bool = True
 
+    # Render sets RENDER=true. Its free tier has an ephemeral filesystem, so a
+    # SQLite database there is wiped on every restart — reported by /api/meta.
+    render: bool = False
+
     # Directory holding DejaVuSans*.ttf for Unicode PDF export. Auto-detected
     # on Debian/Ubuntu (fonts-dejavu-core); falls back to core PDF fonts.
     pdf_font_dir: str | None = None
@@ -94,12 +100,22 @@ class Settings(BaseSettings):
     def max_upload_bytes(self) -> int:
         return self.max_upload_mb * 1024 * 1024
 
+    @property
+    def jwt_secret_configured(self) -> bool:
+        return self.jwt_secret != DEV_JWT_SECRET
+
+    @property
+    def persistent_storage(self) -> bool:
+        """False when data won't survive a restart (SQLite on an ephemeral host)."""
+        on_ephemeral_host = self.render or self.environment == "production"
+        return not (self.sqlalchemy_url.startswith("sqlite") and on_ephemeral_host)
+
     @model_validator(mode="after")
-    def _refuse_insecure_production(self):
-        if self.environment == "production" and (
-            self.jwt_secret == DEV_JWT_SECRET or len(self.jwt_secret) < 32
-        ):
-            raise ValueError("JWT_SECRET must be set to a random value of 32+ characters in production.")
+    def _refuse_weak_secret(self):
+        # An unset secret is fine (a random one is generated and stored);
+        # an explicitly configured weak one is a mistake worth failing on.
+        if self.environment == "production" and self.jwt_secret_configured and len(self.jwt_secret) < 32:
+            raise ValueError("JWT_SECRET must be a random value of 32+ characters (or leave it unset).")
         return self
 
 

@@ -101,9 +101,11 @@ against a real Postgres service and `alembic check` to catch models changed with
 
 ## Deployment
 
-- **API** — `render.yaml` is a Render Blueprint (Docker). It generates `JWT_SECRET` and prompts
-  for `DATABASE_URL`; paste a [Neon](https://neon.tech) or [Supabase](https://supabase.com)
-  Postgres connection string as-is. Migrations run on container start (`backend/start.sh`).
+- **API** — Render (Docker, `render.yaml`) auto-deploys on every push to `main`; migrations run
+  on container start (`backend/start.sh`). Two settings to add in the Render dashboard:
+  `DATABASE_URL` — a free [Neon](https://neon.tech) or [Supabase](https://supabase.com) Postgres
+  connection string, pasted as-is (without it, data resets on every restart and the UI says so);
+  and `ADMIN_EMAILS` — your email, to unlock the job admin page. Everything else has safe defaults.
 - **Frontend** — `.github/workflows/deploy.yml` builds to GitHub Pages on push to `main`. Set
   the repository variable `VITE_API_BASE_URL` to the API's URL.
 - **Scaling past one instance** — set `REDIS_URL` and move migrations to a release step

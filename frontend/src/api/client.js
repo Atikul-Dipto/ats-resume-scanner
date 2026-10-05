@@ -168,3 +168,13 @@ export const adminJobs = {
   remove: (id) => request(`/api/admin/jobs/${id}`, { method: "DELETE" }),
   sync: () => request("/api/admin/jobs/sync", { method: "POST" }),
 };
+
+// Deployment facts (e.g. whether saved data survives a server restart). Cached for the page's lifetime.
+let metaPromise = null;
+export function serverMeta() {
+  metaPromise ??= request("/api/meta").catch(() => {
+    metaPromise = null;
+    return null;
+  });
+  return metaPromise;
+}

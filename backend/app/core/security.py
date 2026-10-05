@@ -4,6 +4,7 @@ import base64
 import hashlib
 import hmac
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import jwt
@@ -45,6 +46,41 @@ def verify_password(password: str, stored: str) -> bool:
 DUMMY_PASSWORD_HASH = hash_password("dummy-password-for-timing")
 
 
+_generated_keys: dict[str, str] = {}
+
+
+def _load_or_create_secret(name: str) -> str:
+    from sqlalchemy import select
+    from sqlalchemy.exc import IntegrityError
+
+    from app.db.models import AppSecret
+    from app.db.session import get_session_factory
+
+    with get_session_factory()() as db:
+        value = db.scalar(select(AppSecret.value).where(AppSecret.name == name))
+        if value:
+            return value
+        db.add(AppSecret(name=name, value=secrets.token_urlsafe(48)))
+        try:
+            db.commit()
+        except IntegrityError:  # another instance created it first — use theirs
+            db.rollback()
+        return db.scalar(select(AppSecret.value).where(AppSecret.name == name))
+
+
+def signing_key() -> str:
+    """JWT_SECRET when configured; otherwise a random key generated once and
+    stored in the database, so a deploy without the env var is still secure
+    (never the public dev default)."""
+    settings = get_settings()
+    if settings.jwt_secret_configured:
+        return settings.jwt_secret
+    url = settings.sqlalchemy_url
+    if url not in _generated_keys:
+        _generated_keys[url] = _load_or_create_secret("jwt_signing_key")
+    return _generated_keys[url]
+
+
 def create_access_token(user_id: str) -> str:
     settings = get_settings()
     now = datetime.now(UTC)
@@ -53,13 +89,13 @@ def create_access_token(user_id: str) -> str:
         "iat": now,
         "exp": now + timedelta(minutes=settings.jwt_expire_minutes),
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=_ALGORITHM)
+    return jwt.encode(payload, signing_key(), algorithm=_ALGORITHM)
 
 
 def decode_access_token(token: str) -> str | None:
     """Returns the user id, or None for any invalid/expired token."""
     try:
-        payload = jwt.decode(token, get_settings().jwt_secret, algorithms=[_ALGORITHM])
+        payload = jwt.decode(token, signing_key(), algorithms=[_ALGORITHM])
     except jwt.PyJWTError:
         return None
     sub = payload.get("sub")
