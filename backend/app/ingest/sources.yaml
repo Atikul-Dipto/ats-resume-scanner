@@ -43,7 +43,6 @@ sources:
   - {name: datadog, type: greenhouse, board: datadog, company: Datadog}
   - {name: toptal, type: lever, board: toptal, company: Toptal}
   - {name: binance, type: lever, board: binance, company: Binance}
-  - {name: deel, type: ashby, board: deel, company: Deel}
   - {name: zapier, type: ashby, board: zapier, company: Zapier}
   - {name: posthog, type: ashby, board: posthog, company: PostHog}
   - {name: supabase, type: ashby, board: supabase, company: Supabase}

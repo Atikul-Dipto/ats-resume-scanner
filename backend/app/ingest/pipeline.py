@@ -22,17 +22,12 @@ from app.ingest.adapters import FETCHERS
 from app.ingest.http import PoliteClient, RobotsDisallowed
 from app.ingest.models import IngestConfig, Posting, SourceConfig
 from app.jobs.catalog import normalize_skills
+from app.jobs.locations import in_bangladesh, is_remote, reachable_from_bangladesh
 from app.jobs.taxonomy import classify_title
 from app.schemas.jobs import is_safe_url
 
 logger = logging.getLogger(__name__)
 
-BANGLADESH_RE = re.compile(
-    r"\b(bangladesh|dhaka|chattogram|chittagong|sylhet|khulna|rajshahi|barishal|barisal|rangpur|"
-    r"mymensingh|gazipur|narayanganj|savar|cumilla|comilla|bogura|bogra|ashulia|tongi)\b",
-    re.IGNORECASE,
-)
-REMOTE_RE = re.compile(r"\b(remote|anywhere|worldwide|work from home|wfh|distributed)\b", re.IGNORECASE)
 HYBRID_RE = re.compile(r"\bhybrid\b", re.IGNORECASE)
 API_DESCRIPTION_CHARS = 6000
 SCRAPED_DESCRIPTION_CHARS = 800
@@ -41,20 +36,18 @@ SCRAPED_DESCRIPTION_CHARS = 800
 def workplace_of(p: Posting) -> str:
     if HYBRID_RE.search(p.location):
         return "hybrid"
-    if p.remote or REMOTE_RE.search(p.location):
-        return "remote"
-    return "onsite"
+    return "remote" if is_remote(p.location, p.remote) else "onsite"
 
 
 def location_ok(p: Posting, policy: str) -> bool:
-    remote = workplace_of(p) == "remote"
-    in_bd = bool(BANGLADESH_RE.search(p.location))
+    """remote_or_bangladesh = reachable from Bangladesh: on-site in BD, or
+    remote and not restricted to some other country/region."""
     return {
-        "any": True,
-        "remote": remote,
-        "bangladesh": in_bd,
-        "remote_or_bangladesh": remote or in_bd,
-    }[policy]
+        "any": lambda: True,
+        "remote": lambda: is_remote(p.location, p.remote),
+        "bangladesh": lambda: in_bangladesh(p.location),
+        "remote_or_bangladesh": lambda: reachable_from_bangladesh(p.location, p.remote),
+    }[policy]()
 
 
 def keyword_ok(title: str, keywords: list[str]) -> bool:

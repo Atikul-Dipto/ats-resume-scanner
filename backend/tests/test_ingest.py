@@ -284,8 +284,10 @@ def test_triage_rules():
         Posting(title="Nurse", company="A", url="https://a.example/4", location="Remote"),
     ]
     kept, reasons = triage(postings, [], "remote_or_bangladesh")
-    assert [p.url for p in kept] == ["https://a.example/1", "https://a.example/3"]
-    assert reasons == {"discipline": 1, "keyword": 0, "location": 1, "url": 1}
+    # "Berlin" + remote flag is remote but tied to a city: not open to Bangladesh.
+    assert [p.url for p in kept] == ["https://a.example/1"]
+    assert reasons == {"discipline": 1, "keyword": 0, "location": 2, "url": 1}
+    assert [p.url for p in triage(postings, [], "remote")[0]] == ["https://a.example/3"]
     assert len(triage(postings, [], "any")[0]) == 3
 
 
@@ -313,6 +315,18 @@ def test_scraped_descriptions_are_excerpts_and_hidden_jobs_stay_hidden(client, r
 def test_source_config_validation(bad):
     with pytest.raises(ValidationError):
         SourceConfig.model_validate(bad)
+
+
+@pytest.mark.parametrize("location,remote,expected", [
+    ("Remote", None, True), ("Home based - Worldwide", None, True), ("Remote - APAC", None, True),
+    ("Asia", True, True), ("Dhaka, Bangladesh", None, True), ("Fully Remote", None, True),
+    ("Remote, Canada", None, False), ("Remote (EMEA)", None, False), ("California, USA, Remote", None, False),
+    ("USA Only", None, False), ("Berlin Office", None, False), ("Asia", None, False),
+])
+def test_reachable_from_bangladesh(location, remote, expected):
+    from app.jobs.locations import reachable_from_bangladesh
+
+    assert reachable_from_bangladesh(location, remote) is expected
 
 
 def test_shipped_config_is_valid_and_templates_are_disabled():
