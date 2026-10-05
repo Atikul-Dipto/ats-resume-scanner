@@ -36,31 +36,26 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
 }
 
-.logo__mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
-  display: grid;
-  place-items: center;
-  color: #fff;
-  background: var(--gradient);
-  box-shadow: 0 6px 16px rgba(var(--primary-rgb), 0.35);
+.logo__img {
+  display: block;
+  height: 32px;
+  width: auto;
   transition: transform 0.4s var(--ease-out);
 }
 
-.navbar__brand:hover .logo__mark {
-  transform: rotate(-8deg) scale(1.06);
+.logo__img--dark,
+[data-theme="dark"] .logo__img--light {
+  display: none;
 }
 
-.logo__text {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 1.2rem;
-  letter-spacing: -0.02em;
-  color: var(--text-strong);
+[data-theme="dark"] .logo__img--dark {
+  display: block;
+}
+
+.navbar__brand:hover .logo__img {
+  transform: translateY(-1px) scale(1.03);
 }
 
 .navbar__links {

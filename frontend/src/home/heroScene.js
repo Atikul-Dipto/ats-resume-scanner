@@ -13,8 +13,8 @@ function palette() {
   const dark = document.documentElement.dataset.theme === "dark";
   return {
     dark,
-    primary: cssVar("--primary", "#5b5bf6"),
-    primary2: cssVar("--primary-2", "#8b5cf6"),
+    primary: cssVar("--primary", "#3466ea"),
+    primary2: cssVar("--primary-2", "#7a5ff3"),
     good: cssVar("--good", "#0f9f6e"),
     card: dark ? "#161a33" : "#ffffff",
     cardEdge: dark ? "rgba(139,139,255,0.35)" : "rgba(91,91,246,0.18)",

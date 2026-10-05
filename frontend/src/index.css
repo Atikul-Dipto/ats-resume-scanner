@@ -6,22 +6,22 @@
   color-scheme: light;
 
   --bg: #f5f6fc;
-  --bg-blob-1: rgba(124, 108, 255, 0.22);
-  --bg-blob-2: rgba(91, 140, 255, 0.18);
+  --bg-blob-1: rgba(122, 95, 243, 0.2);
+  --bg-blob-2: rgba(46, 120, 243, 0.17);
   --bg-blob-3: rgba(196, 167, 255, 0.2);
   --surface: rgba(255, 255, 255, 0.72);
   --surface-solid: #ffffff;
   --surface-2: #f2f3fb;
   --input-bg: #ffffff;
   --nav-bg: rgba(255, 255, 255, 0.72);
-  --border: rgba(91, 91, 246, 0.22);
+  --border: rgba(52, 102, 234, 0.22);
   --border-soft: #e4e6f3;
   --text: #3d4360;
-  --text-strong: #0f1536;
+  --text-strong: #0b1838;
   --text-muted: #6c7393;
-  --primary: #5b5bf6;
-  --primary-2: #8b5cf6;
-  --primary-rgb: 91, 91, 246;
+  --primary: #3466ea;
+  --primary-2: #7a5ff3;
+  --primary-rgb: 52, 102, 234;
   --on-primary: #ffffff;
   --good: #0f9f6e;
   --good-rgb: 16, 185, 129;
@@ -38,7 +38,7 @@
   color-scheme: dark;
 
   --bg: #090b18;
-  --bg-blob-1: rgba(108, 92, 255, 0.24);
+  --bg-blob-1: rgba(122, 95, 243, 0.22);
   --bg-blob-2: rgba(56, 120, 255, 0.14);
   --bg-blob-3: rgba(167, 139, 250, 0.16);
   --surface: rgba(20, 24, 46, 0.7);
@@ -46,14 +46,14 @@
   --surface-2: #181c38;
   --input-bg: rgba(255, 255, 255, 0.04);
   --nav-bg: rgba(9, 11, 24, 0.72);
-  --border: rgba(139, 139, 255, 0.28);
+  --border: rgba(120, 150, 255, 0.28);
   --border-soft: rgba(148, 163, 214, 0.14);
   --text: #c9cfea;
   --text-strong: #f4f5ff;
   --text-muted: #8a92b8;
-  --primary: #7b7bff;
-  --primary-2: #a78bfa;
-  --primary-rgb: 123, 123, 255;
+  --primary: #6b93ff;
+  --primary-2: #a08cff;
+  --primary-rgb: 107, 147, 255;
   --on-primary: #ffffff;
   --good: #34d399;
   --good-rgb: 52, 211, 153;
