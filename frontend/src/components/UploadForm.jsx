@@ -51,7 +51,7 @@ export default function UploadForm({ onSubmit, loading }) {
           <p className="dropzone-file">✓ {file.name}</p>
         ) : (
           <>
-            <p className="dropzone-title">DROP RESUME TO BEGIN SCAN</p>
+            <p className="dropzone-title">Drop your resume here</p>
             <p className="dropzone-hint">or click to browse — .pdf or .docx, max 5MB</p>
           </>
         )}

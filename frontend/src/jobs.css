@@ -93,7 +93,7 @@
 }
 
 .filter-chip {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--surface-2);
   color: var(--text-muted);
   border: 1px solid var(--border-soft);
   box-shadow: none;
@@ -216,9 +216,9 @@
   letter-spacing: 0.06em;
 }
 
-.match-badge.tier-good { color: var(--good); background: rgba(57, 255, 157, 0.06); }
-.match-badge.tier-fair { color: var(--fair); background: rgba(255, 176, 32, 0.06); }
-.match-badge.tier-poor { color: var(--poor); background: rgba(255, 77, 106, 0.06); }
+.match-badge.tier-good { color: var(--good); background: rgba(var(--good-rgb), 0.06); }
+.match-badge.tier-fair { color: var(--fair); background: rgba(var(--fair-rgb), 0.06); }
+.match-badge.tier-poor { color: var(--poor); background: rgba(var(--poor-rgb), 0.06); }
 
 .match-badge--large {
   min-width: 130px;
@@ -251,7 +251,7 @@
 
 .job-tag--local {
   color: var(--good);
-  border-color: rgba(57, 255, 157, 0.35);
+  border-color: rgba(var(--good-rgb), 0.35);
 }
 
 .job-tag--salary {
@@ -260,7 +260,7 @@
 
 .job-tag--deadline {
   color: var(--fair);
-  border-color: rgba(255, 176, 32, 0.35);
+  border-color: rgba(var(--fair-rgb), 0.35);
 }
 
 .match-detail {
@@ -348,7 +348,7 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
-  color: #04070d;
+  color: var(--on-primary);
   border-radius: 8px;
   padding: 13px 20px;
   box-shadow: 0 0 24px rgba(var(--accent-rgb), 0.35);
@@ -419,11 +419,10 @@
   font-family: var(--font-mono);
   font-size: 0.88rem;
   color: var(--text);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 10px 12px;
-  color-scheme: dark;
 }
 
 .admin-form__actions {

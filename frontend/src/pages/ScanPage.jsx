@@ -48,8 +48,8 @@ export default function ScanPage() {
   return (
     <>
       <header className="app-header">
-        <p className="app-eyebrow">// APPLICANT TRACKING SYSTEM DIAGNOSTICS</p>
-        <h1>ATS Resume Scanner</h1>
+        <p className="app-eyebrow">ATS resume scanner</p>
+        <h1>Scan your resume</h1>
         <p>Run a compatibility scan, pinpoint exactly what&apos;s holding your resume back, then fix it in the builder.</p>
       </header>
 

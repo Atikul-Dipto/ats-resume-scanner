@@ -1,77 +1,6 @@
 /* Builder, accounts and navigation. Built on the tokens in index.css so every
    theme (Neural / Cyber / Matrix / Amber) applies here automatically. */
 
-/* ---------- Navigation ---------- */
-
-.navbar {
-  position: sticky;
-  top: 0;
-  z-index: 30;
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 10px 24px;
-  background: rgba(5, 7, 13, 0.78);
-  border-bottom: 1px solid var(--border-soft);
-  backdrop-filter: blur(14px);
-}
-
-.navbar__brand {
-  font-family: var(--font-display);
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--text-strong);
-  text-decoration: none;
-}
-
-.navbar__brand span {
-  color: var(--accent);
-}
-
-.navbar__links {
-  display: flex;
-  gap: 4px;
-}
-
-.navbar__links a {
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-muted);
-  text-decoration: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-}
-
-.navbar__links a:hover {
-  color: var(--text-strong);
-}
-
-.navbar__links a.active {
-  color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.1);
-}
-
-.navbar__right {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.navbar .theme-switcher {
-  position: static;
-  padding: 6px;
-}
-
-.navbar .theme-swatch {
-  width: 16px;
-  height: 16px;
-}
-
-.navbar__signin {
-  text-decoration: none;
-}
-
 .app--wide {
   max-width: 1380px;
 }
@@ -105,11 +34,11 @@
 
 .btn-danger {
   color: var(--poor);
-  border-color: rgba(255, 77, 106, 0.5);
+  border-color: rgba(var(--poor-rgb), 0.5);
 }
 
 .btn-danger:hover:not(:disabled) {
-  background: rgba(255, 77, 106, 0.1);
+  background: rgba(var(--poor-rgb), 0.1);
 }
 
 .icon-btn {
@@ -160,7 +89,7 @@ input[type="tel"] {
   font-family: var(--font-mono);
   font-size: 0.88rem;
   color: var(--text);
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--input-bg);
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   padding: 10px 12px;
@@ -176,7 +105,7 @@ input[type="tel"]:focus {
 }
 
 select option {
-  background: var(--panel-solid);
+  background: var(--surface-solid);
 }
 
 :focus-visible {
@@ -264,7 +193,7 @@ select option {
   gap: 12px;
   padding: 14px 18px;
   position: sticky;
-  top: 60px;
+  top: 76px;
   z-index: 10;
 }
 
@@ -327,7 +256,7 @@ select option {
 
 .builder-side {
   position: sticky;
-  top: 140px;
+  top: 156px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -345,8 +274,8 @@ select option {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 16px;
-  border: 1px solid rgba(255, 176, 32, 0.4);
-  background: rgba(255, 176, 32, 0.08);
+  border: 1px solid rgba(var(--fair-rgb), 0.4);
+  background: rgba(var(--fair-rgb), 0.08);
   color: var(--text-strong);
   border-radius: var(--radius);
   font-size: 0.88rem;
@@ -421,7 +350,7 @@ select option {
   padding: 16px;
   border: 1px solid var(--border-soft);
   border-radius: 10px;
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--surface-2);
 }
 
 .editor-item--inline {
@@ -506,7 +435,7 @@ select option {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--fair);
-  border: 1px solid rgba(255, 176, 32, 0.35);
+  border: 1px solid rgba(var(--fair-rgb), 0.35);
   border-radius: 999px;
   padding: 1px 8px;
 }
@@ -518,7 +447,7 @@ select option {
   padding: 8px;
   border: 1px solid var(--border-soft);
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--input-bg);
 }
 
 .chip-input:focus-within {
@@ -661,7 +590,7 @@ select option {
   font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
   font-size: 11px;
   line-height: 1.5;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-lg);
 }
 
 .resume-paper--compact {
@@ -862,16 +791,6 @@ select option {
 }
 
 @media (max-width: 720px) {
-  .navbar {
-    flex-wrap: wrap;
-    gap: 10px;
-    padding: 10px 14px;
-  }
-
-  .navbar .theme-switcher {
-    display: none;
-  }
-
   .builder-toolbar {
     position: static;
   }

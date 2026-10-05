@@ -32,7 +32,7 @@ export default function AuthPage() {
   return (
     <div className="auth-page">
       <header className="app-header">
-        <p className="app-eyebrow">// {registering ? "CREATE ACCOUNT" : "SIGN IN"}</p>
+        <p className="app-eyebrow">{registering ? "Create account" : "Sign in"}</p>
         <h1>{registering ? "Create an account" : "Welcome back"}</h1>
         <p>
           {location.state?.reason === "save"

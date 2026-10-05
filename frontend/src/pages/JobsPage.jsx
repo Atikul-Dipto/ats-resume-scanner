@@ -108,7 +108,7 @@ export default function JobsPage() {
   return (
     <div className="jobs-page">
       <header className="app-header">
-        <p className="app-eyebrow">// ENGINEERING &amp; DATA JOBS</p>
+        <p className="app-eyebrow">Engineering &amp; data jobs</p>
         <h1>Find jobs that fit your resume</h1>
         <p>Data, software, civil, electrical, mechanical and textile roles — ranked by how well your resume matches each one.</p>
       </header>

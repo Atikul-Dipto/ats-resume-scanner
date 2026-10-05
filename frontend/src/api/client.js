@@ -178,3 +178,6 @@ export function serverMeta() {
   });
   return metaPromise;
 }
+
+// Live counters for the landing page (cached server-side for 60s).
+export const stats = () => request("/api/stats");
