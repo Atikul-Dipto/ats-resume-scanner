@@ -1,4 +1,4 @@
-# Architecture
+# Architecture — Prottoy
 
 ATS Resume Scanner + Builder + Job Board. Version 2 turns the scanner
 prototype into a product that scales: scan an existing resume, open it in a
@@ -225,6 +225,60 @@ flowchart LR
     dot product per job, not a model fit.
   - **Privacy:** the resume travels in the request body and isn't stored.
 
+
+**Job ingestion (`backend/app/ingest`, scheduled by `.github/workflows/ingest.yml`)**
+
+```mermaid
+flowchart LR
+    Y[sources.yaml] --> R[run.py]
+    R --> A1[Greenhouse / Lever / Ashby / SmartRecruiters<br/>official APIs]
+    R --> A2[public job APIs]
+    R --> A3[JSON-LD career pages<br/>robots.txt + terms_ok]
+    R --> A4[HTML listing pages<br/>robots.txt + terms_ok]
+    A1 & A2 & A3 & A4 --> T[triage: discipline · keywords ·<br/>reachable from Bangladesh · safe link]
+    T --> DB[(jobs)]
+```
+
+- **Runs on GitHub Actions every 6 hours.** GitHub's runners have open
+  internet, and the API container doesn't do this work. The workflow writes
+  to the `DATABASE_URL` secret.
+- **Dry runs:** on pull requests, and whenever the secret is missing, the
+  run is dry. It fetches, filters and writes a report (step summary plus a
+  JSON artifact), so source changes can be checked against the real sites
+  before merging.
+- **Politeness:**
+  - An honest User-Agent with a contact URL.
+  - Requests to the same host are spaced out, and `Retry-After` is honoured.
+  - For scraping sources, robots.txt is checked per URL and fails closed: if
+    it can't be read, the site isn't fetched.
+  - Scraping sources also need `terms_ok: true`. That's a human attestation
+    that the site's terms allow it, enforced in code.
+- **Data minimisation:** scraped descriptions are stored as ~800-character
+  excerpts. The **Apply** button always opens the original posting.
+- **Freshness:**
+  - Complete boards (the ATS APIs list every open job each time) drop jobs
+    that disappear from a successful fetch. An empty response is treated as
+    suspicious and doesn't trigger removal.
+  - Everything else ages out after `JOBS_EXTERNAL_MAX_AGE_DAYS`.
+  - A job an admin hid stays hidden.
+- **Reachability** (`jobs/locations.py`) decides which jobs are kept:
+  - Kept: jobs on-site in Bangladesh, and remote jobs that are unrestricted
+    or open to Asia/APAC.
+  - Dropped: remote jobs restricted to another country or region ("Remote,
+    Canada", "EMEA", "USA only"). The first real dry run showed these are
+    most "remote" listings.
+
+**Employer posting: planned pipeline**
+
+The data model already supports it: `jobs.created_by`, plus `draft` /
+`published` / `closed` statuses with an admin moderation path. The remaining
+pieces:
+1. An `employer` role on users, alongside `ADMIN_EMAILS` admins.
+2. A `pending` status that employer submissions enter.
+3. Admin approval moving `pending` to `published`.
+4. Per-employer listing quotas and rate limits.
+5. Contact verification before an employer's first job publishes.
+
 ---
 
 ## 6. Scaling model
@@ -274,6 +328,7 @@ The only per-process state is the cache, and §6.1 below covers that.
 | **0: now** | Portfolio traffic | 1 Render instance, Neon Postgres, in-memory cache. Migrations run in `start.sh`. |
 | **1: more than one instance** | Sustained CPU > 70 %, or p95 of `/api/analyze` > 2 s | Set `REDIS_URL` (Upstash free tier) so cache and rate limits are shared. Run migrations once per deploy (`RUN_MIGRATIONS=0` on web instances plus a pre-deploy job). Raise `WEB_CONCURRENCY` or the instance count. |
 | **2: CPU-bound work dominates** | Parse/export time is the bulk of instance CPU, or uploads queue behind the semaphore | Replace the body of `executor.run_cpu_bound()` with a Redis-backed job queue (e.g. arq) and a separate worker service. Routes don't change. If p95 then exceeds about 5 s, switch `/api/analyze` to submit-and-poll (`202` plus a job id). |
+| **2a: more sources** | Ingest runs approach the workflow's 30-minute limit | Split sources across a matrix of workflow jobs (one per source type), or move ingestion to a queue worker; the per-source `run_source` function already isolates each source. |
 | **2b: job catalog grows** | More than ~10k open jobs, or index rebuilds show up in p95 | Run `python -m app.jobs.sync` on a schedule (cron) with `JOBS_SYNC_ENABLED=false` on web instances. Precompute job embeddings at write time into `pgvector` and pre-filter candidates by discipline and skills in SQL before scoring. |
 | **3: data volume** | Event tables reach tens of millions of rows | Monthly partitioning or roll-ups of `*_events` with a retention job; a read replica for stats and training reads. |
 

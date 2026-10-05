@@ -151,7 +151,7 @@ export default function AdminJobsPage() {
   return (
     <div className="admin-page">
       <header className="app-header">
-        <p className="app-eyebrow">// ADMIN</p>
+        <p className="app-eyebrow">Admin</p>
         <h1>Manage job listings</h1>
         <p>Post local jobs, hide imported ones, and refresh the remote catalog.</p>
       </header>

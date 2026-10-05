@@ -9,8 +9,16 @@ export const DISCIPLINES = {
 export const WORKPLACES = { onsite: "On-site", remote: "Remote", hybrid: "Hybrid" };
 export const EMPLOYMENT_TYPES = { full_time: "Full-time", part_time: "Part-time", contract: "Contract", internship: "Internship" };
 const SOURCE_NAMES = { remotive: "Remotive", arbeitnow: "Arbeitnow", themuse: "The Muse", adzuna: "Adzuna" };
+// Ingested sources are "<kind>:<name>" (see backend/app/ingest/models.py).
+const SOURCE_KINDS = { gh: "company careers", lv: "company careers", ab: "company careers", sr: "company careers",
+  ld: "company careers", web: "job board" };
 
-export const sourceLabel = (source) => (source === "local" ? "Posted here" : `via ${SOURCE_NAMES[source] || source}`);
+export function sourceLabel(source) {
+  if (source === "local") return "Posted here";
+  const [kind] = source.split(":");
+  if (source.includes(":")) return `via ${SOURCE_KINDS[kind] || "partner site"}`;
+  return `via ${SOURCE_NAMES[source] || source}`;
+}
 
 export function formatSalary(job) {
   const { salary_min: min, salary_max: max, salary_currency: cur, salary_period: period } = job;

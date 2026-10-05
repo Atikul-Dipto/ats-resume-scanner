@@ -5,8 +5,9 @@ older than JOBS_SYNC_INTERVAL_HOURS, (b) on demand from the admin API, or
 (c) from a scheduler: `python -m app.jobs.sync` (cron / GitHub Actions at scale).
 
 Rules:
-- Only remote roles that classify into a supported discipline are kept:
-  an on-site job in Berlin is noise for a candidate in Dhaka. Local on-site
+- Only remote roles open to candidates in Bangladesh, in a supported
+  discipline, are kept: an on-site job in Berlin, or "Remote, US only", is
+  noise for a candidate in Dhaka. Local on-site
   roles come from admin-posted listings instead.
 - Upsert by (source, url); an admin who hid an imported job keeps it hidden.
 - APIs return only their top results, so a job missing from one sync isn't
@@ -28,6 +29,7 @@ from app.db.models import Job
 from app.db.session import get_session_factory
 from app.jobs.aggregator import _is_worldwide_remote
 from app.jobs.catalog import normalize_skills
+from app.jobs.locations import remote_open_to_bangladesh
 from app.jobs.sources import fetch_adzuna, fetch_arbeitnow, fetch_remotive, fetch_themuse
 from app.jobs.taxonomy import classify_title
 from app.schemas.jobs import is_safe_url
@@ -91,7 +93,8 @@ def upsert_external(raw_jobs: list[dict], now: datetime | None = None) -> dict:
         url = (raw.get("url") or "").strip()[:500]
         title = (raw.get("title") or "").strip()
         discipline = classify_title(title)
-        if not url or not title or not discipline or not is_safe_url(url) or _workplace(raw) != "remote":
+        reachable = _workplace(raw) == "remote" and remote_open_to_bangladesh(raw.get("location") or "")
+        if not url or not title or not discipline or not is_safe_url(url) or not reachable:
             stats["skipped"] += 1
             continue
         source = (raw.get("source") or "external").lower().replace(" ", "")[:30]

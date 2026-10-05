@@ -72,7 +72,7 @@ export default function ResumesPage() {
   return (
     <div className="resumes-page">
       <header className="app-header">
-        <p className="app-eyebrow">// SAVED RESUMES</p>
+        <p className="app-eyebrow">Saved resumes</p>
         <h1>My resumes</h1>
         <p>Signed in as {user.email}. Keep one resume per target role and tailor each to its job description.</p>
       </header>
@@ -91,7 +91,7 @@ export default function ResumesPage() {
       {items === null && !error && <p className="no-issues">Loading…</p>}
       {items?.length === 0 && (
         <div className="hud-panel page-message">
-          No saved resumes yet. Start one above, or <Link to="/">scan an existing resume</Link> and open it in the builder.
+          No saved resumes yet. Start one above, or <Link to="/scan">scan an existing resume</Link> and open it in the builder.
         </div>
       )}
 

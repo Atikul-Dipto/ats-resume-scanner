@@ -8,6 +8,7 @@ import {
   formatSalary,
   matchLabel,
   matchTier,
+  safeHref,
   sourceLabel,
 } from "./format.js";
 
@@ -15,6 +16,7 @@ export default function JobCard({ job, match }) {
   const salary = formatSalary(job);
   const experience = formatExperience(job);
   const deadline = formatDeadline(job.deadline);
+  const apply = safeHref(job.apply_url);
 
   return (
     <li className="job-listing hud-panel">
@@ -63,6 +65,12 @@ export default function JobCard({ job, match }) {
           job.snippet && <p className="job-listing__snippet">{job.snippet}</p>
         )}
       </Link>
+      {apply && (
+        <a className="job-listing__apply button-link button-link--small" href={apply} target="_blank" rel="noopener noreferrer"
+          aria-label={`Apply for ${job.title} at ${job.company} (opens the original posting)`}>
+          Apply ↗
+        </a>
+      )}
     </li>
   );
 }
