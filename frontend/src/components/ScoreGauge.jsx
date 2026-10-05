@@ -13,7 +13,8 @@ export default function ScoreGauge({ score, label = "ATS SCORE" }) {
     const durationMs = 900;
 
     const tick = (now) => {
-      const progress = Math.min((now - start) / durationMs, 1);
+      // rAF timestamps can precede `start` slightly; clamp so the gauge never reads negative.
+      const progress = Math.min(Math.max((now - start) / durationMs, 0), 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplayed(target * eased);
       if (progress < 1) raf = requestAnimationFrame(tick);

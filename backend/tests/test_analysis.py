@@ -113,3 +113,10 @@ def test_find_weak_bullets_flags_missing_verb_and_number():
     flagged = find_weak_bullets(text)
     assert any("worked on stuff" in f["text"] for f in flagged)
     assert not any("Led migration" in f["text"] for f in flagged)
+
+
+def test_current_title_excludes_employer():
+    from app.analysis.profile_extractor import extract_current_title
+
+    text = "Experience\nSenior Data Analyst, Acme Corp\n2020 - Present\n- Built things."
+    assert extract_current_title(text) == "Senior Data Analyst"

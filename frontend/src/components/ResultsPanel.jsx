@@ -7,12 +7,18 @@ import SuggestionsList from "./SuggestionsList.jsx";
 import FlaggedLines from "./FlaggedLines.jsx";
 import JobSearchPanel from "./JobSearchPanel.jsx";
 
-export default function ResultsPanel({ result, onReset }) {
+export default function ResultsPanel({ result, onReset, onOpenInBuilder }) {
   return (
     <div className="results-panel">
       <div className="results-header">
         <ScoreGauge score={result.ats_score} />
         <ScoreBreakdown result={result} />
+        {onOpenInBuilder && (
+          <div className="results-cta">
+            <p>Fix these issues in the builder — we&apos;ve pre-filled it from your file, with a live score as you edit.</p>
+            <button type="button" onClick={onOpenInBuilder}>Open in builder →</button>
+          </div>
+        )}
       </div>
 
       <div className="results-grid">

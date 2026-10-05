@@ -74,7 +74,7 @@ class InBatchContrastiveModel(keras.Model):
             loss = tf.reduce_mean(loss)
 
         gradients = tape.gradient(loss, self.encoder.trainable_variables)
-        self.optimizer.apply_gradients(zip(gradients, self.encoder.trainable_variables))
+        self.optimizer.apply_gradients(zip(gradients, self.encoder.trainable_variables, strict=False))
 
         predicted = tf.argmax(similarity, axis=1, output_type=tf.int32)
         accuracy = tf.reduce_mean(tf.cast(tf.equal(predicted, labels), tf.float32))

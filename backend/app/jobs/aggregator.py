@@ -3,6 +3,7 @@ import re
 
 import httpx
 
+from app.core.cache import Cache
 from app.jobs.sources import fetch_adzuna, fetch_arbeitnow, fetch_remotive, fetch_themuse
 from app.matching.infer import get_encoder
 
@@ -41,16 +42,34 @@ def _relevance(job: dict, terms: set[str]) -> float:
     return overlap + title_overlap * 2  # weight title matches higher
 
 
-async def search_jobs(query: str, skills: list[str], location: str = "") -> list[dict]:
-    async with httpx.AsyncClient() as client:
-        results_lists = await asyncio.gather(
-            fetch_remotive(client, query),
-            fetch_arbeitnow(client, query),
-            fetch_themuse(client, query),
-            fetch_adzuna(client, query, location),
-        )
+async def _gather_sources(client: httpx.AsyncClient, query: str, location: str, cache: Cache | None):
+    return await asyncio.gather(
+        fetch_remotive(client, query, cache),
+        fetch_arbeitnow(client, query, cache),
+        fetch_themuse(client, query, cache),
+        fetch_adzuna(client, query, location, cache),
+    )
 
-    all_jobs = [job for group in results_lists for job in group]
+
+async def search_jobs(
+    query: str,
+    skills: list[str],
+    location: str = "",
+    *,
+    client: httpx.AsyncClient | None = None,
+    cache: Cache | None = None,
+) -> list[dict]:
+    """Fans out to every provider concurrently. Each provider swallows its own
+    failures, so one slow or broken job board degrades results, never the request."""
+    if client is not None:
+        results_lists = await _gather_sources(client, query, location, cache)
+    else:
+        async with httpx.AsyncClient() as own_client:
+            results_lists = await _gather_sources(own_client, query, location, cache)
+
+    # Copies: the dicts below are mutated (scores added, descriptions dropped),
+    # and with an in-memory cache the originals are the cached objects.
+    all_jobs = [dict(job) for group in results_lists for job in group]
 
     seen = set()
     unique_jobs = []
@@ -75,7 +94,7 @@ async def search_jobs(query: str, skills: list[str], location: str = "") -> list
         ]
         job_embs = encoder.embed_batch(job_texts)
         similarities = job_embs @ anchor_emb
-        for job, similarity in zip(unique_jobs, similarities):
+        for job, similarity in zip(unique_jobs, similarities, strict=False):
             job["relevance_score"] += max(float(similarity), 0.0) * EMBEDDING_WEIGHT
 
     if terms:

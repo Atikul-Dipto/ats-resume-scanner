@@ -1,85 +1,106 @@
-# ATS Resume Scanner
+# ATS Resume Scanner + Builder
 
 **Live demo**: https://atikul-dipto.github.io/ats-resume-scanner/
-(backend is on Render's free tier — the first request after idle can take ~30–50s to wake up)
+(the API runs on Render's free tier — the first request after idle can take ~30–50s to wake up)
 
-Scans a resume for ATS (Applicant Tracking System) compatibility — formatting risks, missing
-sections, weak content, keyword gaps against a target job description — then searches live job
-boards for roles that match the candidate's extracted title, skills, and experience.
+Scan an existing resume for ATS (Applicant Tracking System) problems, open it in a structured
+builder pre-filled from your file, fix it against a **live** ATS score, tailor it to a job
+posting, and export an ATS-safe PDF or DOCX. Then search live job boards for roles that match.
+Accounts are optional — they add saved resumes, versions, and score history.
 
-## How it works
+→ **[ARCHITECTURE.md](ARCHITECTURE.md)** for the system design, scaling model, data model,
+security controls, and decision log.
 
-**Resume analysis** (`backend/app/analysis`)
-- Parses `.pdf` (pdfplumber) and `.docx` (python-docx), flagging structural risks ATS parsers
-  choke on: embedded images, tables, multi-column layouts, contact info stuck in a header/footer.
-- Detects standard resume sections (Contact, Summary, Experience, Education, Skills).
-- Extracts a candidate profile: emails, phone, links, skills (matched against a curated skills
-  list), years of experience, and current title — all scoped to the Experience section so it
-  doesn't confuse education dates with work history.
-- If a job description is supplied, scores keyword overlap via TF-IDF cosine similarity plus
-  direct skill-list matching, and reports matched vs. missing keywords.
-- Combines formatting, content quality (bullet points, action verbs, quantified achievements),
-  and keyword scores into a single 0–100 ATS score with actionable suggestions.
+## What it does
 
-**Job search** (`backend/app/jobs`)
-- Queries free, key-less public job APIs concurrently: [Remotive](https://remotive.com/api-documentation),
-  [Arbeitnow](https://www.arbeitnow.com/api/job-board-api), [The Muse](https://www.themuse.com/developers/api/v2).
-- Optionally queries [Adzuna](https://developer.adzuna.com/) if `ADZUNA_APP_ID`/`ADZUNA_APP_KEY`
-  are set (free registration, location-based search).
-- Deduplicates results, ranks by keyword/title overlap with the resume's extracted title and
-  skills, and drops zero-relevance noise.
+**Scan** (`/api/analyze`)
+- Parses `.pdf` (pdfplumber) and `.docx` (python-docx) in memory — uploads are never stored.
+- Flags structural risks ATS parsers choke on: images, tables, real multi-column layouts
+  (gutter detection — dense single-column pages aren't false-flagged), contact info in a
+  header/footer, length.
+- Detects standard sections, scores content (action verbs, quantified bullets) and keyword
+  match against a target job description (TF-IDF + skills vocabulary), with actionable fixes.
+- Returns a best-effort structured draft of the file so it can be opened in the builder.
 
-No scraping — job-board Terms of Service generally prohibit it, and it's fragile. Everything here
-goes through documented, public APIs.
+**Build** (`/api/builder/*`, `/api/resumes/*`)
+- Structured editor for contact info, experience, education, skills, projects, certifications.
+- Live score while typing (debounced, ~6 ms server-side), with coaching shown under the exact
+  bullet that's weak and one-click adds for keywords missing from the target job.
+- Export to single-column, text-based PDF or DOCX. The exported file scores the same as the
+  editor showed — verified in tests by exporting, re-parsing with the scanner, and comparing.
+- Anonymous drafts autosave in the browser; signed-in users get saved resumes with optimistic
+  locking (two tabs can't silently overwrite each other) and per-resume score history.
 
-**Matching encoder** (`backend/app/matching`) — see the [model card](backend/app/matching/MODEL_CARD.md)
-for full details, training data, and honestly-documented limitations.
-- A TensorFlow-trained two-tower (shared-encoder) neural network embeds resumes and job postings
-  into one vector space, so cosine similarity re-ranks the keyword-based job search above — it
-  can surface semantically related roles the keyword heuristic misses (e.g. a "BI Analyst" posting
-  for a "Data Analyst" resume with no literal skill-string overlap).
-- Trained on real job postings (self-supervised: a posting's title vs. its own description) plus
-  an accumulating, fully anonymized log of real searches (title + skills only — never raw resume
-  text or contact info). Retrain with `python -m app.matching.train` as that log grows.
-- TensorFlow is a **training-only** dependency (`requirements-train.txt`). The trained model is
-  exported to plain NumPy (`app/matching/infer.py`), which is what the deployed API actually
-  loads — keeping TensorFlow's memory footprint off the free-tier production container.
+**Match jobs** (`/api/jobs/search`)
+- Queries documented public APIs concurrently — [Remotive](https://remotive.com/api-documentation),
+  [Arbeitnow](https://www.arbeitnow.com/api/job-board-api), [The Muse](https://www.themuse.com/developers/api/v2),
+  and optionally [Adzuna](https://developer.adzuna.com/) — with caching, a per-request deadline,
+  and per-provider failure isolation. No scraping.
+- Ranks by keyword/title overlap re-ranked by a from-scratch two-tower encoder (trained with
+  TensorFlow, served as plain NumPy) — see the [model card](backend/app/matching/MODEL_CARD.md).
 
 ## Stack
 
-- **Backend**: FastAPI, pdfplumber, python-docx, scikit-learn, NumPy, httpx
-- **Matching model training**: TensorFlow/Keras (dev-only, see above)
-- **Frontend**: React + Vite
+| | |
+|---|---|
+| Frontend | React 18, Vite, React Router — static on GitHub Pages |
+| API | FastAPI, SQLAlchemy 2, Alembic, PyJWT, pdfplumber, python-docx, fpdf2, scikit-learn, NumPy |
+| Data | Postgres (Neon/Supabase free tier) in production, SQLite locally; optional Redis |
+| Training | TensorFlow/Keras (dev-only, `requirements-train.txt`) |
 
 ## Running locally
 
 ```bash
-# Backend
+# Backend (Python 3.12)
 cd backend
-python -m venv .venv
-.venv\Scripts\activate   # source .venv/bin/activate on macOS/Linux
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+python -m venv .venv && source .venv/bin/activate   # .venv\Scripts\activate on Windows
+pip install -r requirements-dev.txt
+alembic upgrade head          # creates ./data/app.db (SQLite)
+uvicorn app.main:app --reload # http://localhost:8000/docs
 
 # Frontend (separate terminal)
 cd frontend
 npm install
-npm run dev
+npm run dev                   # http://localhost:5173/ats-resume-scanner/
 ```
 
-Copy `.env.example` to `.env` in each folder if you need to override defaults (API base URL,
-allowed CORS origins, Adzuna keys).
+Production-shaped stack (Postgres + Redis + API) instead of SQLite:
 
-## Tests
+```bash
+docker compose up --build
+```
+
+All configuration is environment variables — see [`backend/.env.example`](backend/.env.example).
+
+## Tests & checks
 
 ```bash
 cd backend
-pytest
+ruff check .
+pytest                                                   # SQLite
+TEST_DATABASE_URL=postgresql://user:pass@localhost/db pytest   # same suite on Postgres
+
+cd ../frontend
+npm run lint && npm run build
 ```
+
+CI (`.github/workflows/ci.yml`) runs all of the above on every PR, including the backend suite
+against a real Postgres service and `alembic check` to catch models changed without a migration.
 
 ## Deployment
 
-- **Backend**: containerized via the included `Dockerfile` — deploy to Render, Railway, or Fly.io.
-  Set `ALLOWED_ORIGINS` to your deployed frontend URL.
-- **Frontend**: static build (`npm run build`) — deploy to Vercel, Netlify, or GitHub Pages. Set
-  `VITE_API_BASE_URL` to your deployed backend URL.
+- **API** — `render.yaml` is a Render Blueprint (Docker). It generates `JWT_SECRET` and prompts
+  for `DATABASE_URL`; paste a [Neon](https://neon.tech) or [Supabase](https://supabase.com)
+  Postgres connection string as-is. Migrations run on container start (`backend/start.sh`).
+- **Frontend** — `.github/workflows/deploy.yml` builds to GitHub Pages on push to `main`. Set
+  the repository variable `VITE_API_BASE_URL` to the API's URL.
+- **Scaling past one instance** — set `REDIS_URL` and move migrations to a release step
+  (`RUN_MIGRATIONS=0`). The full staged plan is in [ARCHITECTURE.md §6](ARCHITECTURE.md#6-scaling-model).
+
+## Retraining the matching encoder
+
+```bash
+cd backend
+pip install -r requirements-train.txt
+python -m app.matching.train   # reads anonymized events from DATABASE_URL
+```

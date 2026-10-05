@@ -39,8 +39,7 @@ def test_embed_batch_matches_single_embed():
     assert np.allclose(batch, singles, atol=1e-6)
 
 
-def test_log_event_and_fetch_events_roundtrip(tmp_path, monkeypatch):
-    monkeypatch.setattr("app.matching.store.DB_PATH", tmp_path / "events.db")
+def test_log_event_and_fetch_events_roundtrip():
     assert event_count() == 0
 
     log_event(
@@ -60,8 +59,7 @@ def test_log_event_and_fetch_events_roundtrip(tmp_path, monkeypatch):
     assert event_count() == 1
 
 
-def test_log_resume_scan_and_fetch_roundtrip(tmp_path, monkeypatch):
-    monkeypatch.setattr("app.matching.store.DB_PATH", tmp_path / "events.db")
+def test_log_resume_scan_and_fetch_roundtrip():
     assert resume_scan_count() == 0
 
     log_resume_scan(
@@ -84,9 +82,7 @@ def test_log_resume_scan_and_fetch_roundtrip(tmp_path, monkeypatch):
     assert resume_scan_count() == 1
 
 
-def test_resume_scan_and_match_event_tables_are_independent(tmp_path, monkeypatch):
-    monkeypatch.setattr("app.matching.store.DB_PATH", tmp_path / "events.db")
-
+def test_resume_scan_and_match_event_tables_are_independent():
     log_resume_scan(
         title="Data Analyst",
         skills=["python"],

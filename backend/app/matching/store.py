@@ -1,62 +1,22 @@
 """Anonymized event log powering the retraining flywheel.
 
-Two tables:
+Two tables in the main database (see app/db/models.py):
 - match_events: logged from /api/jobs/search — skills/title/years plus
   which job it matched against.
-- resume_scans: logged from /api/analyze — skills/title/years plus the
-  resulting ATS scores, one row per scan, independent of whether the user
-  went on to search jobs.
+- resume_scan_events: logged from /api/analyze and resume saves — skills/
+  title/years plus the resulting ATS scores, one row per scan.
 
 Never raw resume text, name, email, or phone — those never reach this
-module in either case.
+module, and neither does a user id: events can't be tied back to an account.
+
+Writes are called from FastAPI BackgroundTasks, after the response has been
+sent, so logging never adds latency to (or fails) a user-facing request.
 """
 
-import json
-import sqlite3
-from contextlib import contextmanager
-from datetime import datetime, timezone
-from pathlib import Path
+from sqlalchemy import func, select
 
-DB_PATH = Path(__file__).parent.parent.parent / "data" / "events.db"
-
-SCHEMA = """
-CREATE TABLE IF NOT EXISTS match_events (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    resume_title TEXT,
-    skills TEXT NOT NULL,
-    years_experience REAL,
-    job_title TEXT NOT NULL,
-    job_company TEXT,
-    job_source TEXT,
-    relevance_score REAL,
-    created_at TEXT NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS resume_scans (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    title TEXT,
-    skills TEXT NOT NULL,
-    years_experience REAL,
-    ats_score REAL,
-    formatting_score REAL,
-    content_score REAL,
-    keyword_score REAL,
-    had_job_description INTEGER NOT NULL,
-    created_at TEXT NOT NULL
-);
-"""
-
-
-@contextmanager
-def _connect():
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    try:
-        conn.executescript(SCHEMA)
-        yield conn
-        conn.commit()
-    finally:
-        conn.close()
+from app.db.models import MatchEvent, ResumeScanEvent
+from app.db.session import get_session_factory
 
 
 def log_event(
@@ -68,52 +28,53 @@ def log_event(
     job_source: str,
     relevance_score: float,
 ) -> None:
-    with _connect() as conn:
-        conn.execute(
-            "INSERT INTO match_events "
-            "(resume_title, skills, years_experience, job_title, job_company, job_source, "
-            "relevance_score, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                resume_title,
-                json.dumps(skills),
-                years_experience,
-                job_title,
-                job_company,
-                job_source,
-                relevance_score,
-                datetime.now(timezone.utc).isoformat(),
-            ),
+    with get_session_factory()() as db:
+        db.add(MatchEvent(
+            resume_title=(resume_title or None) and resume_title[:200],
+            skills=skills[:60],
+            years_experience=years_experience,
+            job_title=job_title[:300],
+            job_company=(job_company or "")[:300],
+            job_source=job_source,
+            relevance_score=relevance_score,
+        ))
+        db.commit()
+
+
+def log_match_events(resume_title: str, skills: list[str], jobs: list[dict]) -> None:
+    for job in jobs:
+        log_event(
+            resume_title=resume_title,
+            skills=skills,
+            years_experience=None,
+            job_title=job["title"],
+            job_company=job["company"],
+            job_source=job["source"],
+            relevance_score=job["relevance_score"],
         )
 
 
 def fetch_events(limit: int = 5000) -> list[dict]:
-    if not DB_PATH.exists():
-        return []
-    with _connect() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT * FROM match_events ORDER BY id DESC LIMIT ?", (limit,)
-        ).fetchall()
+    with get_session_factory()() as db:
+        rows = db.scalars(select(MatchEvent).order_by(MatchEvent.id.desc()).limit(limit)).all()
     return [
         {
-            "resume_title": row["resume_title"],
-            "skills": json.loads(row["skills"]),
-            "years_experience": row["years_experience"],
-            "job_title": row["job_title"],
-            "job_company": row["job_company"],
-            "job_source": row["job_source"],
-            "relevance_score": row["relevance_score"],
-            "created_at": row["created_at"],
+            "resume_title": row.resume_title,
+            "skills": row.skills,
+            "years_experience": row.years_experience,
+            "job_title": row.job_title,
+            "job_company": row.job_company,
+            "job_source": row.job_source,
+            "relevance_score": row.relevance_score,
+            "created_at": row.created_at.isoformat(),
         }
         for row in rows
     ]
 
 
 def event_count() -> int:
-    if not DB_PATH.exists():
-        return 0
-    with _connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM match_events").fetchone()[0]
+    with get_session_factory()() as db:
+        return db.scalar(select(func.count()).select_from(MatchEvent)) or 0
 
 
 def log_resume_scan(
@@ -126,51 +87,53 @@ def log_resume_scan(
     keyword_score: float,
     had_job_description: bool,
 ) -> None:
-    with _connect() as conn:
-        conn.execute(
-            "INSERT INTO resume_scans "
-            "(title, skills, years_experience, ats_score, formatting_score, content_score, "
-            "keyword_score, had_job_description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                title,
-                json.dumps(skills),
-                years_experience,
-                ats_score,
-                formatting_score,
-                content_score,
-                keyword_score,
-                int(had_job_description),
-                datetime.now(timezone.utc).isoformat(),
-            ),
-        )
+    with get_session_factory()() as db:
+        db.add(ResumeScanEvent(
+            title=(title or None) and title[:200],
+            skills=skills[:60],
+            years_experience=years_experience,
+            ats_score=ats_score,
+            formatting_score=formatting_score,
+            content_score=content_score,
+            keyword_score=keyword_score,
+            had_job_description=had_job_description,
+        ))
+        db.commit()
+
+
+def log_analysis(result: dict, had_job_description: bool) -> None:
+    profile = result["profile"]
+    log_resume_scan(
+        title=profile["current_title"],
+        skills=profile["skills"],
+        years_experience=profile["years_experience"],
+        ats_score=result["ats_score"],
+        formatting_score=result["formatting_score"],
+        content_score=result["content_score"],
+        keyword_score=result["keyword_score"],
+        had_job_description=had_job_description,
+    )
 
 
 def fetch_resume_scans(limit: int = 5000) -> list[dict]:
-    if not DB_PATH.exists():
-        return []
-    with _connect() as conn:
-        conn.row_factory = sqlite3.Row
-        rows = conn.execute(
-            "SELECT * FROM resume_scans ORDER BY id DESC LIMIT ?", (limit,)
-        ).fetchall()
+    with get_session_factory()() as db:
+        rows = db.scalars(select(ResumeScanEvent).order_by(ResumeScanEvent.id.desc()).limit(limit)).all()
     return [
         {
-            "title": row["title"],
-            "skills": json.loads(row["skills"]),
-            "years_experience": row["years_experience"],
-            "ats_score": row["ats_score"],
-            "formatting_score": row["formatting_score"],
-            "content_score": row["content_score"],
-            "keyword_score": row["keyword_score"],
-            "had_job_description": bool(row["had_job_description"]),
-            "created_at": row["created_at"],
+            "title": row.title,
+            "skills": row.skills,
+            "years_experience": row.years_experience,
+            "ats_score": row.ats_score,
+            "formatting_score": row.formatting_score,
+            "content_score": row.content_score,
+            "keyword_score": row.keyword_score,
+            "had_job_description": row.had_job_description,
+            "created_at": row.created_at.isoformat(),
         }
         for row in rows
     ]
 
 
 def resume_scan_count() -> int:
-    if not DB_PATH.exists():
-        return 0
-    with _connect() as conn:
-        return conn.execute("SELECT COUNT(*) FROM resume_scans").fetchone()[0]
+    with get_session_factory()() as db:
+        return db.scalar(select(func.count()).select_from(ResumeScanEvent)) or 0

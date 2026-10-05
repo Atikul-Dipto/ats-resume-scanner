@@ -98,11 +98,10 @@ def extract_current_title(text: str) -> str | None:
     for line in scope.splitlines():
         stripped = line.strip()
         word_count = len(stripped.split())
-        if (
-            3 < len(stripped) < 60
-            and not stripped.endswith(".")
-            and word_count <= 8
-            and TITLE_LINE_RE.search(stripped)
-        ):
-            return stripped
+        if 3 < len(stripped) < 60 and not stripped.endswith(".") and word_count <= 8:
+            match = TITLE_LINE_RE.search(stripped)
+            if match:
+                # Just the title — the rest of the line is usually the employer,
+                # which shouldn't seed job searches or reach the anonymized log.
+                return match.group(0)
     return None

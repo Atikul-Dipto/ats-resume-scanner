@@ -4,7 +4,7 @@ ACTION_VERBS = {
     "achieved", "analyzed", "automated", "built", "created", "designed", "developed",
     "delivered", "drove", "engineered", "established", "executed", "founded", "implemented",
     "improved", "increased", "launched", "led", "managed", "optimized", "reduced", "resolved",
-    "spearheaded", "streamlined", "built", "generated", "grew", "negotiated", "orchestrated",
+    "spearheaded", "streamlined", "generated", "grew", "negotiated", "orchestrated",
 }
 
 BULLET_LINE_RE = re.compile(r"^\s*[•\-\*•●‣]\s*(.+)")

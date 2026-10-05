@@ -14,3 +14,6 @@ frontend/.env
 # Editors / OS
 .vscode/
 .DS_Store
+
+# Local throwaway databases
+backend/*.db
