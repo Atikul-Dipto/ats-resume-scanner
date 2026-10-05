@@ -1,11 +1,13 @@
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
-from sqlalchemy import text
+from sqlalchemy import func, select, text
 from starlette.concurrency import run_in_threadpool
 
 from app.core.cache import get_cache
 from app.core.config import get_settings
-from app.db.session import get_engine
+from app.db.models import Job
+from app.db.session import get_engine, get_session_factory
+from app.jobs.catalog import open_condition
 from app.matching.store import event_count, resume_scan_count
 
 router = APIRouter(prefix="/api", tags=["ops"])
@@ -48,6 +50,18 @@ async def ready():
                         status_code=200 if healthy else 503)
 
 
+def _catalog_counts() -> dict:
+    with get_session_factory()() as db:
+        open_jobs, companies, local = db.execute(
+            select(
+                func.count(),
+                func.count(func.distinct(Job.company)),
+                func.count().filter(Job.source == "local"),
+            ).where(open_condition())
+        ).one()
+    return {"open_jobs": open_jobs, "companies_hiring": companies, "local_jobs": local}
+
+
 @router.get("/stats")
 async def stats():
     """Aggregate counts only — no per-scan or per-search detail exposed here.
@@ -59,6 +73,7 @@ async def stats():
     payload = {
         "resume_scans": await run_in_threadpool(resume_scan_count),
         "job_search_events": await run_in_threadpool(event_count),
+        **await run_in_threadpool(_catalog_counts),
     }
     await cache.set("stats:v1", payload, STATS_TTL_SECONDS)
     return payload

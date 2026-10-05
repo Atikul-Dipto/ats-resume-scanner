@@ -1,0 +1,100 @@
+name: Ingest jobs
+
+# Pulls jobs from every source in backend/app/ingest/sources.yaml into the
+# catalog. Runs on GitHub's runners (open internet), writing to the database
+# in the DATABASE_URL repository secret. Without that secret, or on a pull
+# request, it does a dry run: fetch + filter + report, nothing written.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # every 6 hours
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Fetch and report only, write nothing"
+        type: boolean
+        default: false
+      source:
+        description: "Only this source name (blank = all)"
+        type: string
+        default: ""
+      keyword:
+        description: "Extra title keyword filter (blank = none)"
+        type: string
+        default: ""
+  pull_request:
+    paths:
+      - "backend/app/ingest/**"
+      - ".github/workflows/ingest.yml"
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - run: pip install -r requirements.txt
+
+      - name: Choose mode
+        id: mode
+        env:
+          HAS_DB: ${{ secrets.DATABASE_URL != '' }}
+          EVENT: ${{ github.event_name }}
+          DRY_INPUT: ${{ inputs.dry_run }}
+        run: |
+          if [ "$EVENT" = "pull_request" ] || [ "$DRY_INPUT" = "true" ] || [ "$HAS_DB" != "true" ]; then
+            echo "args=--dry-run" >> "$GITHUB_OUTPUT"
+            echo "::notice::Dry run (event=$EVENT, dry_run=$DRY_INPUT, database secret set=$HAS_DB)"
+          else
+            echo "args=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Migrate database
+        if: steps.mode.outputs.args == ''
+        run: alembic upgrade head
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Ingest
+        env:
+          DATABASE_URL: ${{ steps.mode.outputs.args == '' && secrets.DATABASE_URL || 'sqlite:///./data/dry-run.db' }}
+          SOURCE: ${{ inputs.source }}
+          KEYWORD: ${{ inputs.keyword }}
+        run: |
+          ARGS="${{ steps.mode.outputs.args }} --report ingest-report.json"
+          [ -n "$SOURCE" ] && ARGS="$ARGS --source $SOURCE"
+          [ -n "$KEYWORD" ] && ARGS="$ARGS --keyword $KEYWORD"
+          python -m app.ingest.run $ARGS
+
+      - name: Summary
+        if: always()
+        run: |
+          [ -f ingest-report.json ] || exit 0
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          r = json.load(open("ingest-report.json"))
+          print(f"### Ingest {'(dry run)' if r['dry_run'] else ''}: kept {r['kept']}, created {r['created']}, {r['requests']} requests in {r['seconds']}s\n")
+          print("| source | status | fetched | kept | created | removed | note |\n|---|---|---|---|---|---|---|")
+          for s in r["sources"]:
+              note = s.get("error") or s.get("reason") or "; ".join(s.get("sample", [])[:2])
+              print(f"| {s['source']} | {s['status']} | {s.get('fetched','')} | {s.get('kept','')} | {s.get('created','')} | {s.get('removed','')} | {note[:120]} |")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ingest-report
+          path: backend/ingest-report.json
+          if-no-files-found: ignore

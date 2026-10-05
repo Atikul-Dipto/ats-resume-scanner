@@ -1,0 +1,78 @@
+# Where Prottoy gets jobs. Run: python -m app.ingest.run [--dry-run]
+#
+# Every source goes through the same rules (app/ingest/pipeline.py):
+#   - only engineering & data roles (Data, Software, Civil, Electrical, Mechanical/Textile)
+#   - optional title keywords (global below, per source, or --keyword on the CLI)
+#   - location policy: remote_or_bangladesh (default) | remote | bangladesh | any
+#   - apply links always point back to the original posting
+#
+# Source types
+#   public_apis      Remotive, Arbeitnow, The Muse, Adzuna (existing integrations)
+#   greenhouse       board: the company's Greenhouse board token  (boards.greenhouse.io/<board>)
+#   lever            board: the company's Lever slug              (jobs.lever.co/<board>)
+#   ashby            board: the company's Ashby job board name    (jobs.ashbyhq.com/<board>)
+#   smartrecruiters  board: the company identifier                (jobs.smartrecruiters.com/<board>)
+#   jsonld_pages     career pages with schema.org JobPosting data (urls: / sitemap:)
+#   html_list        a job listing page read with CSS selectors
+#
+# The last two read pages meant for people, so they:
+#   1. always honour the site's robots.txt (checked automatically, per URL), and
+#   2. only run with `terms_ok: true` — set it after you've read the site's
+#      terms of use and they don't prohibit automated access. Sites that
+#      forbid it (e.g. LinkedIn, Indeed, Glassdoor, and BDJobs per its
+#      robots.txt) can't be added this way; ask them for a feed or partnership.
+
+keywords: []                 # e.g. [data, engineer, analyst] to narrow every source
+location_policy: remote_or_bangladesh
+min_delay_seconds: 2         # per host, between requests
+
+sources:
+  - name: public-apis
+    type: public_apis
+
+  # --- Company career boards (official public APIs) ----------------------
+  # Remote-first companies that hire internationally, incl. from Bangladesh.
+  - {name: gitlab, type: greenhouse, board: gitlab, company: GitLab}
+  - {name: canonical, type: greenhouse, board: canonical, company: Canonical}
+  - {name: mozilla, type: greenhouse, board: mozilla, company: Mozilla}
+  - {name: wikimedia, type: greenhouse, board: wikimedia, company: Wikimedia Foundation}
+  - {name: grafana-labs, type: greenhouse, board: grafanalabs, company: Grafana Labs}
+  - {name: elastic, type: greenhouse, board: elastic, company: Elastic}
+  - {name: cloudflare, type: greenhouse, board: cloudflare, company: Cloudflare}
+  - {name: mongodb, type: greenhouse, board: mongodb, company: MongoDB}
+  - {name: datadog, type: greenhouse, board: datadog, company: Datadog}
+  - {name: toptal, type: lever, board: toptal, company: Toptal}
+  - {name: binance, type: lever, board: binance, company: Binance}
+  - {name: deel, type: ashby, board: deel, company: Deel}
+  - {name: zapier, type: ashby, board: zapier, company: Zapier}
+  - {name: posthog, type: ashby, board: posthog, company: PostHog}
+  - {name: supabase, type: ashby, board: supabase, company: Supabase}
+  - {name: n8n, type: ashby, board: n8n, company: n8n}
+  - {name: duckduckgo, type: ashby, board: duck-duck-go, company: DuckDuckGo}
+
+  # --- Templates: copy, fill in, and enable once the terms allow it -------
+  - name: example-careers
+    type: jsonld_pages
+    enabled: false
+    terms_ok: false
+    company: Example Ltd
+    sitemap: https://careers.example.com/sitemap.xml
+    url_pattern: "/jobs/"
+    max_pages: 50
+    notes: Company career site that embeds schema.org JobPosting (most modern ones do).
+
+  - name: example-board
+    type: html_list
+    enabled: false
+    terms_ok: false
+    urls:
+      - https://jobs.example.com/search?category=engineering
+    selectors:
+      item: ".job-card"
+      title: ".job-card__title"
+      link: "a.job-card__link"
+      company: ".job-card__company"
+      location: ".job-card__location"
+    follow_detail: true
+    location_policy: bangladesh
+    notes: Listing page read with CSS selectors; detail pages read for JSON-LD when present.

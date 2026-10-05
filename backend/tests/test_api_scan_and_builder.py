@@ -137,7 +137,9 @@ def test_health_ready_stats(client):
     assert client.get("/api/health").json() == {"status": "ok"}
     ready = client.get("/api/ready")
     assert ready.status_code == 200 and ready.json()["checks"] == {"database": True, "cache": True}
-    assert client.get("/api/stats").json() == {"resume_scans": 0, "job_search_events": 0}
+    assert client.get("/api/stats").json() == {
+        "resume_scans": 0, "job_search_events": 0, "open_jobs": 0, "companies_hiring": 0, "local_jobs": 0,
+    }
 
 
 def test_meta_reports_storage_and_admin(client, monkeypatch):
