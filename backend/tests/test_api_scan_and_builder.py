@@ -144,10 +144,17 @@ def test_meta_reports_storage_and_admin(client, monkeypatch):
     from app.core.config import get_settings
 
     assert client.get("/api/meta").json() == {"persistent_storage": True, "admin_configured": True}
+
+    # /api/meta only reads settings, so the URL can point anywhere here.
     monkeypatch.setenv("RENDER", "true")
     monkeypatch.setenv("ADMIN_EMAILS", "")
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///./data/unused.db")
     get_settings.cache_clear()
     assert client.get("/api/meta").json() == {"persistent_storage": False, "admin_configured": False}
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql://u:p@db.example/ats")
+    get_settings.cache_clear()
+    assert client.get("/api/meta").json()["persistent_storage"] is True
 
 
 def test_cors_allows_configured_origin_only(client):
