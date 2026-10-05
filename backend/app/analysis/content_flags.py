@@ -1,5 +1,3 @@
-import re
-
 from app.analysis.ats_scorer import ACTION_VERBS, BULLET_LINE_RE, NUMBER_RE
 
 MAX_FLAGS = 8

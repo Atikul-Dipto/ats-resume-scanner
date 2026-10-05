@@ -36,11 +36,11 @@ data exists anywhere. Training data is honestly limited to:
    *same* real posting. This teaches the encoder which titles/skills/
    descriptions cluster together, without fabricating any label.
 2. **Usage flywheel (accumulates over time)**, two independent sources, both
-   in `backend/data/events.db`, both anonymized — never raw resume text,
+   in the main database (`DATABASE_URL`), both anonymized — never raw resume text,
    name, email, or phone:
    - `match_events`, logged from `/api/jobs/search`: the query (title +
      skills) and its top matches.
-   - `resume_scans`, logged from `/api/analyze`: title + skills + years of
+   - `resume_scan_events`, logged from `/api/analyze`: title + skills + years of
      experience + the resulting ATS scores, one row per scan — captures
      every scan, not only the ones that go on to search jobs.
 
@@ -62,10 +62,11 @@ ground-truth-labeled matches exist yet.
 - **Small, English-language, general-role corpus.** Remotive skews
   tech/remote; deep coverage of specialized or non-English-speaking labor
   markets is unlikely.
-- **Ephemeral storage in production.** Render's free tier has no persistent
-  disk — `backend/data/events.db` resets on every redeploy. The flywheel
-  only accumulates data between deploys, not indefinitely. A real deployment
-  would need a persistent volume or external database.
+- **Usage data is only as durable as the database.** Since v2 the event
+  log lives in Postgres (it was a SQLite file that Render's free tier wiped
+  on every redeploy), so it now accumulates across deploys. Events carry no
+  user id, and for uploads the title is trimmed to the job title itself so
+  employer names don't enter the training data.
 - **No fairness/bias audit.** The encoder has not been evaluated for
   systematic bias across demographic groups, industries, or role types.
 
@@ -89,7 +90,9 @@ pip install -r requirements-train.txt   # TensorFlow, training-only
 python -m app.matching.train
 ```
 
-Re-run periodically as `backend/data/events.db` accumulates real usage.
+Re-run periodically as the event tables accumulate real usage. Point
+`DATABASE_URL` at the production database (read access is enough) to train
+on real events.
 Exports to `app/matching/artifacts/` (`vocab.json`, `weights.npz`,
 `metadata.json`), which `app/matching/infer.py` loads with plain NumPy —
 TensorFlow is never imported by the deployed API.

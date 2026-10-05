@@ -1,6 +1,6 @@
-export default function FormattingIssues({ issues }) {
+export default function FormattingIssues({ issues, emptyText = "No formatting issues detected." }) {
   if (issues.length === 0) {
-    return <p className="no-issues">No formatting issues detected.</p>;
+    return <p className="no-issues">{emptyText}</p>;
   }
 
   return (

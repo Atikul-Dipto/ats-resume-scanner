@@ -1,3 +1,7 @@
+# Render Blueprint for the API. The frontend is static and deploys to GitHub
+# Pages (.github/workflows/deploy.yml). Postgres is external (Neon or Supabase
+# free tier) because Render's free Postgres expires after 30 days — paste its
+# connection string into DATABASE_URL when Render prompts for it.
 services:
   - type: web
     name: ats-resume-scanner-api
@@ -7,5 +11,17 @@ services:
     plan: free
     healthCheckPath: /api/health
     envVars:
+      - key: ENVIRONMENT
+        value: production
       - key: ALLOWED_ORIGINS
         value: https://atikul-dipto.github.io
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      # Your account email: grants access to /admin/jobs to post listings.
+      - key: ADMIN_EMAILS
+        sync: false
+      # Optional: add when running more than one instance.
+      # - key: REDIS_URL
+      #   sync: false

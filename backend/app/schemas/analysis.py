@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from app.schemas.resume import ResumeDocument
+
 
 class FormattingIssue(BaseModel):
     severity: str  # "critical" | "warning" | "info"
@@ -58,3 +60,13 @@ class JobListing(BaseModel):
 class JobSearchResponse(BaseModel):
     query: str
     results: list[JobListing]
+
+
+class BuilderAnalysisResponse(AnalyzeResponse):
+    """Live score for a resume being edited in the builder."""
+
+
+class UploadAnalysisResponse(AnalyzeResponse):
+    # Best-effort structured version of the upload, so the user can open it
+    # in the builder instead of retyping. Heuristic — the UI asks for review.
+    draft_document: ResumeDocument

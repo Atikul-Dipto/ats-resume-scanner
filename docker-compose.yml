@@ -1,0 +1,42 @@
+# Full production-shaped stack locally: API + Postgres + Redis.
+#   docker compose up --build      -> API on http://localhost:8000
+# Then run the frontend with `npm run dev` in ./frontend.
+services:
+  api:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: development
+      DATABASE_URL: postgresql://ats:ats@postgres:5432/ats
+      REDIS_URL: redis://redis:6379/0
+      ALLOWED_ORIGINS: http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ats
+      POSTGRES_PASSWORD: ats
+      POSTGRES_DB: ats
+    ports:
+      - "5434:5432"
+    volumes:
+      - ats_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ats -d ats"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+
+volumes:
+  ats_pgdata:
