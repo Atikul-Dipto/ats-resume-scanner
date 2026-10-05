@@ -268,6 +268,55 @@ flowchart LR
     Canada", "EMEA", "USA only"). The first real dry run showed these are
     most "remote" listings.
 
+**AI assistant (`backend/app/assistant`, `POST /api/assistant/chat`)**
+
+```mermaid
+sequenceDiagram
+    participant B as Browser (chat panel)
+    participant A as API
+    participant C as Claude
+    B->>A: visible history + page context (resume, job id, target JD)
+    A->>C: system prompt (cached) + history + context block
+    loop until no more tool calls (max ASSISTANT_MAX_ROUNDS)
+        C-->>A: streamed text / tool calls
+        A-->>B: SSE text deltas
+        A->>A: run tools (scorer, matcher, catalog, memory)
+        A-->>B: SSE job cards / edit suggestions / saved memory
+        A->>C: tool results
+    end
+    A-->>B: done
+```
+
+- **Stateless:** the browser sends the visible conversation back each time
+  (text only). The server appends tool turns to its own per-request copy, so
+  the API keeps no chat state and scales out like every other route.
+- **Context as data:** the resume (with `[i.j]` index labels), page, target
+  JD and memories go into the latest *user* turn inside `<context>`, not the
+  system prompt. A resume or a scraped job description can contain text that
+  looks like instructions; the system prompt says to treat it as data. The
+  system prompt itself never changes, so it's cacheable.
+- **Tools reuse the product's code.** `score_resume` is `analyze_document`,
+  `find_jobs` is `match_document`, and `get_job` and `remember` read and
+  write the same database. The assistant can't contradict the score or
+  match numbers the UI shows.
+- **Edits are proposals.** `suggest_edits` validates each change against the
+  document (indexes exist, the bullet being replaced is the one shown) and
+  returns `before`/`after`. The browser applies one only when the user clicks
+  Apply, refuses it if that line has changed since, and can undo it. The
+  model never writes to a resume directly.
+- **Tool set by page:** resume tools only when a resume is open,
+  `suggest_edits` only in the builder, and `save_job_draft` only for admins.
+  A call to an unavailable tool returns an error result instead of running.
+- **Model:** `ASSISTANT_MODEL`, default `claude-opus-5-5`, with adaptive
+  thinking, `ASSISTANT_EFFORT` (default `medium`), and server-side refusal
+  fallbacks (`fallbacks: "default"`).
+- **Cost and abuse limits:**
+  - Per-IP rate limit, plus a per-person daily message cap (by account, or by
+    IP when signed out).
+  - A cap on model calls per message.
+  - History and size caps in the request schema.
+  - Token usage is logged on every turn.
+
 **Employer posting: planned pipeline**
 
 The data model already supports it: `jobs.created_by`, plus `draft` /
@@ -372,6 +421,12 @@ erDiagram
       string source "upload | builder"
       float ats_score
     }
+    users ||--o{ assistant_memories : "assistant learned"
+    assistant_memories {
+      string id PK
+      string user_id FK
+      string text "e.g. targets data roles in Dhaka"
+    }
     users ||--o{ jobs : "admin posts"
     jobs {
       string id PK
@@ -421,6 +476,8 @@ erDiagram
 | Lost updates | Version compare-and-swap (409) |
 | Malicious uploads | Extension *and* magic-byte checks; size cap read without buffering; page cap before parsing; parsing errors become 422 |
 | Resource exhaustion | Parse semaphore, per-endpoint rate limits, list and string caps in the schemas, per-user resume quota |
+| Prompt injection via resumes or job postings | User and scraped text reaches the model only inside `<context>` / tool results, marked as data. The assistant's actions are limited to read-only tools, proposals the user must click to apply, its own memory, and (admins only) draft listings that aren't public until published. |
+| AI cost abuse | Assistant disabled without a key; per-IP rate limit; per-person daily cap; per-message model-call cap; request size caps |
 | Cross-origin abuse | CORS allowlist (`ALLOWED_ORIGINS`), no credentialed CORS |
 | Error leakage | Unhandled exceptions return a generic JSON 500 carrying `request_id`. The CORS layer wraps it, so browsers can still read it. |
 

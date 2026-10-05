@@ -25,3 +25,6 @@ beautifulsoup4==4.15.0
 PyYAML==6.0.3
 scikit-learn==1.5.2
 numpy==2.5.2
+
+# AI assistant (app/assistant)
+anthropic==1.11.0

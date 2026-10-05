@@ -17,6 +17,22 @@ security controls, and decision log.
 
 ## What it does
 
+**AI assistant** (`/api/assistant/*`, `backend/app/assistant`)
+- A chat panel on every page, powered by Claude, that knows what you're looking at: your resume
+  in the builder or scanner, a job posting, or the admin page.
+- It works through tools over Prottoy's own data, so its facts match the UI:
+  - It runs the real ATS scan.
+  - It recommends jobs from the board, ranked by the same matcher.
+  - It reads job postings.
+  - It **suggests resume edits** (summary, headline, bullets, skills) that you apply or undo with
+    one click.
+- It writes summaries, cover letters and job descriptions. Admins can save a generated job
+  description as a draft listing.
+- It **learns**: goals and preferences you mention are remembered across chats. They're stored
+  with your account, or in the browser when you're signed out, and you can view and delete them.
+- It's off until `ANTHROPIC_API_KEY` is set; the UI hides it entirely until then. Usage is capped
+  per person per day (`ASSISTANT_DAILY_LIMIT`) and per minute (`RATE_LIMIT_ASSISTANT`).
+
 **Scan** (`/api/analyze`)
 - Parses `.pdf` (pdfplumber) and `.docx` (python-docx) in memory — uploads are never stored.
 - Flags structural risks ATS parsers choke on: images, tables, real multi-column layouts
@@ -126,6 +142,9 @@ against a real Postgres service and `alembic check` to catch models changed with
   `DATABASE_URL` — a free [Neon](https://neon.tech) or [Supabase](https://supabase.com) Postgres
   connection string, pasted as-is (without it, data resets on every restart and the UI says so);
   and `ADMIN_EMAILS` — your email, to unlock the job admin page. Everything else has safe defaults.
+  To turn on the AI assistant, also add `ANTHROPIC_API_KEY`, a key from
+  [console.anthropic.com](https://console.anthropic.com/). It's billed per use, with a daily cap
+  per person. `ASSISTANT_MODEL` picks the model.
 - **Frontend** — `.github/workflows/deploy.yml` builds to GitHub Pages on push to `main`. Set
   the repository variable `VITE_API_BASE_URL` to the API's URL.
 - **Scaling past one instance** — set `REDIS_URL` and move migrations to a release step

@@ -4,6 +4,7 @@ import { jobs as jobsApi } from "../api/client.js";
 import { DISCIPLINES, WORKPLACES, loadProfile, saveProfile } from "../jobs/format.js";
 import JobCard from "../jobs/JobCard.jsx";
 import ProfilePicker from "../jobs/ProfilePicker.jsx";
+import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const PAGE_SIZE = 20;
 
@@ -15,6 +16,7 @@ export default function JobsPage() {
     if (handoff) saveProfile(handoff);
     return handoff || loadProfile();
   });
+  useAssistantPage({ page: "jobs", document: profile?.document });
   const [filters, setFilters] = useState({ discipline: "", workplace: "", source: "", q: "" });
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);

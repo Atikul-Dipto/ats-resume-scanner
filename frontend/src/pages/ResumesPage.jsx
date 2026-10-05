@@ -4,12 +4,14 @@ import { auth as authApi, resumes } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
 import { isBlank, loadDraft } from "../builder/model.js";
 import StorageNotice from "../components/StorageNotice.jsx";
+import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const tierOf = (score) => (score >= 80 ? "good" : score >= 55 ? "fair" : "poor");
 const formatWhen = (iso) =>
   new Date(iso).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
 export default function ResumesPage() {
+  useAssistantPage({ page: "resumes" });
   const { user, status, logout } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState(null);

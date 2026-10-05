@@ -181,3 +181,43 @@ export function serverMeta() {
 
 // Live counters for the landing page (cached server-side for 60s).
 export const stats = () => request("/api/stats");
+
+// --- AI assistant ---
+let assistantStatus = null;
+export const assistant = {
+  // Cached: whether the server has the assistant switched on.
+  status: () => {
+    assistantStatus ??= request("/api/assistant/status").catch(() => {
+      assistantStatus = null;
+      return { enabled: false };
+    });
+    return assistantStatus;
+  },
+  memories: () => request("/api/assistant/memories"),
+  forget: (id) => request(`/api/assistant/memories/${id}`, { method: "DELETE" }),
+  forgetAll: () => request("/api/assistant/memories", { method: "DELETE" }),
+  // Streams the reply as server-sent events, calling onEvent(name, data) for each.
+  async chat(body, { onEvent, signal }) {
+    const res = await request("/api/assistant/chat", { method: "POST", json: body, signal, raw: true });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      let end;
+      while ((end = buffer.indexOf("\n\n")) >= 0) {
+        const chunk = buffer.slice(0, end);
+        buffer = buffer.slice(end + 2);
+        let name = "message";
+        let data = "";
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("event: ")) name = line.slice(7);
+          else if (line.startsWith("data: ")) data += line.slice(6);
+        }
+        if (data) onEvent(name, JSON.parse(data));
+      }
+    }
+  },
+};
