@@ -1,6 +1,9 @@
-# ATS Resume Scanner + Builder + Job Board
+# Prottoy — the career center for job seekers
 
-**Live demo**: https://atikul-dipto.github.io/ats-resume-scanner/
+**Live**: https://atikul-dipto.github.io/ats-resume-scanner/
+
+*Prottoy (প্রত্যয়) means "confidence".* ATS resume scanner, live resume builder and an
+engineering & data job board for job seekers in Bangladesh, in one place.
 (the API runs on Render's free tier — the first request after idle can take ~30–50s to wake up)
 
 Scan an existing resume for ATS (Applicant Tracking System) problems, open it in a structured
@@ -42,6 +45,23 @@ security controls, and decision log.
   a match score with the skills you have, the skills you're missing, and an experience-fit note.
   The detected discipline is pre-selected. "Tailor my resume for this job" opens the builder with
   that posting as the target job.
+
+**Job ingestion** (`backend/app/ingest`, `python -m app.ingest.run`)
+- Pulls jobs from many sources into the catalog every 6 hours (`.github/workflows/ingest.yml`):
+  company career boards via the official Greenhouse, Lever, Ashby and SmartRecruiters APIs, the
+  public job APIs, and — opt-in per site — schema.org `JobPosting` career pages and CSS-selector
+  listing pages. Configure sources and keywords in [`sources.yaml`](backend/app/ingest/sources.yaml).
+- Scraping honours robots.txt for every URL (failing closed) and only runs for sites whose terms
+  you've confirmed allow it (`terms_ok: true`). Sites that forbid it (LinkedIn, Indeed, BDJobs…)
+  aren't scraped — ask them for a feed instead.
+- Only jobs reachable from Bangladesh are kept (on-site in Bangladesh, or remote and not limited to
+  another country). Every job links to its original posting: **Apply** opens it in one click.
+- To write to the live database, add the `DATABASE_URL` repository secret (Settings → Secrets and
+  variables → Actions). Without it, scheduled runs are dry runs that only report what they'd import.
+
+**Interface**
+- Light/dark design with a three.js 3D hero (lazy-loaded, paused off-screen, reduced-motion aware),
+  live stats and a live job feed on the landing page, scroll and hover motion throughout.
 
 **Live job search** (`/api/jobs/search`)
 - Queries documented public APIs concurrently — [Remotive](https://remotive.com/api-documentation),
