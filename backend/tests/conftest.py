@@ -15,7 +15,7 @@ os.environ["ALLOWED_ORIGINS"] = "http://localhost:5173"
 os.environ["ADMIN_EMAILS"] = "admin@example.com"
 # Tests trigger catalog syncs explicitly; never hit real job APIs in the background.
 os.environ["JOBS_SYNC_ENABLED"] = "false"
-for scope in ("analyze", "builder", "export", "jobs", "auth", "match"):
+for scope in ("analyze", "builder", "export", "jobs", "auth", "match", "assistant"):
     os.environ[f"RATE_LIMIT_{scope.upper()}"] = "10000/minute"
 
 import pytest  # noqa: E402

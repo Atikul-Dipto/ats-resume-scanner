@@ -53,6 +53,19 @@ class Settings(BaseSettings):
     rate_limit_jobs: str = "20/minute"
     rate_limit_auth: str = "10/minute"
     rate_limit_match: str = "30/minute"
+    rate_limit_assistant: str = "8/minute"
+
+    # AI assistant (app/assistant). Off until ANTHROPIC_API_KEY is set; the UI
+    # hides the assistant entirely while it's off.
+    anthropic_api_key: str | None = None
+    assistant_model: str = "claude-opus-5-5"
+    assistant_effort: Literal["low", "medium", "high"] = "medium"
+    assistant_max_tokens: int = 16000
+    # Model calls per chat message (each tool round is one call).
+    assistant_max_rounds: int = 6
+    # Messages per person (account, or IP when signed out) per UTC day.
+    assistant_daily_limit: int = 40
+    assistant_max_memories: int = 30
 
     # Job search
     jobs_cache_ttl_seconds: int = 900
@@ -83,6 +96,10 @@ class Settings(BaseSettings):
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def assistant_enabled(self) -> bool:
+        return bool(self.anthropic_api_key)
 
     @property
     def admin_emails_set(self) -> set[str]:

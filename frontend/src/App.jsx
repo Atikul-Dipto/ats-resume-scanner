@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import NavBar, { Logo } from "./components/NavBar.jsx";
 import PaperField from "./components/PaperField.jsx";
+import AssistantDock from "./assistant/AssistantDock.jsx";
+import { AssistantProvider } from "./assistant/AssistantContext.jsx";
 import AdminJobsPage from "./pages/AdminJobsPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import BuilderPage from "./pages/BuilderPage.jsx";
@@ -26,7 +28,7 @@ export default function App() {
   }, [pathname]);
 
   return (
-    <>
+    <AssistantProvider>
       <NavBar mode={mode} onModeChange={setMode} />
       {pathname === "/scan" && <PaperField />}
 
@@ -57,6 +59,8 @@ export default function App() {
           </span>
         </div>
       </footer>
-    </>
+
+      <AssistantDock />
+    </AssistantProvider>
   );
 }

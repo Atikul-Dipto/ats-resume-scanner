@@ -160,6 +160,20 @@ class Job(Base):
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
 
+class AssistantMemory(Base):
+    """Something the assistant learned about a signed-in user ("targets data
+    analyst roles in Dhaka"), fed back into later conversations. Users can
+    see and delete every entry. Signed-out users' memories stay in their
+    browser instead."""
+
+    __tablename__ = "assistant_memories"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    text: Mapped[str] = mapped_column(String(300))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now)
+
+
 class AppSecret(Base):
     """Server-generated secrets, e.g. the JWT signing key when JWT_SECRET isn't
     configured. Never exposed through the API."""

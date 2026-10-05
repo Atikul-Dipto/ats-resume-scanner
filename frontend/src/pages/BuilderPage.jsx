@@ -14,6 +14,7 @@ import {
 } from "../builder/SectionEditors.jsx";
 import { clearDraft, downloadBlob, emptyDocument, loadDraft, saveDraft, withKeys } from "../builder/model.js";
 import useLiveScore from "../builder/useLiveScore.js";
+import { useAssistant, useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const snapshotOf = (title, doc, jd) => JSON.stringify([title, doc, jd]);
 
@@ -110,6 +111,8 @@ export default function BuilderPage() {
   }, [dirty]);
 
   const { result: score, error: scoreError, pending } = useLiveScore(doc, jd);
+  const ai = useAssistant();
+  useAssistantPage({ page: "builder", document: doc, jobDescription: jd, apply: setDoc });
 
   const save = useCallback(async () => {
     if (!doc) return;
@@ -213,6 +216,9 @@ export default function BuilderPage() {
           )}
         </span>
         <div className="builder-actions">
+          {ai.enabled && (
+            <button type="button" className="btn-small ai-open-btn" onClick={() => ai.openAssistant()}>✦ AI assist</button>
+          )}
           {!id && <button type="button" className="btn-ghost btn-small" onClick={resetDraft}>New blank</button>}
           <button type="button" className="btn-small" onClick={save} disabled={saveState.status === "saving" || (id && !dirty)}>
             {id ? "Save" : authStatus === "authenticated" ? "Save to account" : "Sign in to save"}

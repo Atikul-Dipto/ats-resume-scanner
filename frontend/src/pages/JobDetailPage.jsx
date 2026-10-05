@@ -15,6 +15,7 @@ import {
   safeHref,
   sourceLabel,
 } from "../jobs/format.js";
+import { useAssistant, useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 export default function JobDetailPage() {
   const { id } = useParams();
@@ -23,6 +24,8 @@ export default function JobDetailPage() {
   const match = location.state?.match || null;
   const [job, setJob] = useState(null);
   const [error, setError] = useState(null);
+  const ai = useAssistant();
+  useAssistantPage({ page: "job", jobId: id, document: loadProfile()?.document });
 
   useEffect(() => {
     jobsApi.get(id).then(setJob).catch((err) => setError(err.message));
@@ -90,6 +93,11 @@ export default function JobDetailPage() {
             </a>
           )}
           <button type="button" className="btn-ghost" onClick={tailor}>Tailor my resume for this job</button>
+          {ai.enabled && (
+            <button type="button" className="btn-ghost ai-open-btn" onClick={() => ai.openAssistant("Am I a good fit for this job?")}>
+              ✦ Ask AI about this job
+            </button>
+          )}
         </div>
       </header>
 

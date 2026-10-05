@@ -5,6 +5,7 @@ import { isBlank, loadDraft } from "../builder/model.js";
 import LoadingScan from "../components/LoadingScan.jsx";
 import ResultsPanel from "../components/ResultsPanel.jsx";
 import UploadForm from "../components/UploadForm.jsx";
+import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 export default function ScanPage() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function ScanPage() {
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  useAssistantPage({ page: "scan", document: result?.draft_document, jobDescription });
 
   async function handleSubmit(file, jd) {
     setLoading(true);

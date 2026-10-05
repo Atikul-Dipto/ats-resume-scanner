@@ -22,6 +22,9 @@ services:
       # Your account email: grants access to /admin/jobs to post listings.
       - key: ADMIN_EMAILS
         sync: false
+      # Optional: turns on the AI assistant (billed per use by Anthropic).
+      - key: ANTHROPIC_API_KEY
+        sync: false
       # Optional: add when running more than one instance.
       # - key: REDIS_URL
       #   sync: false

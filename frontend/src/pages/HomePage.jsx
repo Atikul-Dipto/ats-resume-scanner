@@ -4,6 +4,7 @@ import Hero3D from "../home/Hero3D.jsx";
 import JobFeed from "../home/JobFeed.jsx";
 import LiveStats from "../home/LiveStats.jsx";
 import useReveal from "../hooks/useReveal.js";
+import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const FLOATING = [
   { to: "/scan", icon: "⌕", title: "ATS Resume Scanner", text: "Check compatibility & fix issues", pos: "a" },
@@ -26,6 +27,7 @@ const STEPS = [
 ];
 
 export default function HomePage() {
+  useAssistantPage({ page: "home" });
   const navigate = useNavigate();
   const rootRef = useRef(null);
   useReveal(rootRef);

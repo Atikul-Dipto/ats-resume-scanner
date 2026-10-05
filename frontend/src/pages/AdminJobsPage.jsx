@@ -4,6 +4,7 @@ import { useAuth } from "../auth/AuthContext.jsx";
 import { ChipInput } from "../builder/fields.jsx";
 import { DISCIPLINES, EMPLOYMENT_TYPES, WORKPLACES, sourceLabel } from "../jobs/format.js";
 import StorageNotice from "../components/StorageNotice.jsx";
+import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const EMPTY = {
   title: "", company: "", location: "", discipline: "data", employment_type: "full_time", workplace: "onsite",
@@ -99,6 +100,7 @@ function JobForm({ initial, onSave, onCancel }) {
 }
 
 export default function AdminJobsPage() {
+  useAssistantPage({ page: "admin" });
   const { user, status } = useAuth();
   const [source, setSource] = useState("local");
   const [statusFilter, setStatusFilter] = useState("");

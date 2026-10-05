@@ -11,6 +11,7 @@ import "./jobs.css";
 import "./shell.css";
 import "./home.css";
 import "./paperfield.css";
+import "./assistant.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
