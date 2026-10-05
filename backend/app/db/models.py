@@ -8,9 +8,9 @@ Two kinds of data, deliberately separated:
 """
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import JSON, Boolean, Date, DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -40,6 +40,13 @@ class User(Base):
     resumes: Mapped[list["Resume"]] = relationship(
         back_populates="user", cascade="all, delete-orphan", passive_deletes=True
     )
+
+    @property
+    def is_admin(self) -> bool:
+        # Granted only through the ADMIN_EMAILS env var, never through the API.
+        from app.core.config import get_settings
+
+        return self.email.lower() in get_settings().admin_emails_set
 
 
 class Resume(Base):
@@ -111,3 +118,43 @@ class MatchEvent(Base):
     job_source: Mapped[str | None] = mapped_column(String(50), nullable=True)
     relevance_score: Mapped[float | None] = mapped_column(Float, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+
+
+class Job(Base):
+    """A job listing: posted here by an admin (source="local") or pulled from a
+    public job API (source = provider name, external_id = its URL)."""
+
+    __tablename__ = "jobs"
+    __table_args__ = (
+        UniqueConstraint("source", "external_id", name="uq_jobs_source_external_id"),
+        Index("ix_jobs_status_discipline", "status", "discipline"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=_uuid)
+    source: Mapped[str] = mapped_column(String(30), default="local", index=True)
+    external_id: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    title: Mapped[str] = mapped_column(String(300))
+    company: Mapped[str] = mapped_column(String(300))
+    location: Mapped[str] = mapped_column(String(200), default="")
+    discipline: Mapped[str] = mapped_column(String(20))
+    employment_type: Mapped[str] = mapped_column(String(20), default="full_time")
+    workplace: Mapped[str] = mapped_column(String(20), default="onsite")
+    experience_min: Mapped[float | None] = mapped_column(Float, nullable=True)
+    experience_max: Mapped[float | None] = mapped_column(Float, nullable=True)
+    salary_min: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    salary_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    salary_currency: Mapped[str] = mapped_column(String(3), default="BDT")
+    salary_period: Mapped[str] = mapped_column(String(10), default="month")
+    description: Mapped[str] = mapped_column(Text)
+    # Skills used for matching: what the admin listed plus what's mentioned in
+    # the description, normalized to the shared skills vocabulary.
+    skills: Mapped[list] = mapped_column(JSONType)
+    apply_url: Mapped[str] = mapped_column(String(500), default="")
+    deadline: Mapped[date | None] = mapped_column(Date, nullable=True, index=True)
+    status: Mapped[str] = mapped_column(String(20), default="published")  # draft | published | closed
+    created_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, index=True)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_now, onupdate=_now)
+    last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

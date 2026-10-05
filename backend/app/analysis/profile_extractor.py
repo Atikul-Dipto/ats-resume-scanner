@@ -57,14 +57,15 @@ def extract_links(text: str) -> list[str]:
     return sorted(set(LINK_RE.findall(text)))
 
 
+# Compiled once: extract_skills runs over every ingested job posting.
+_SKILL_PATTERNS = [
+    (skill, re.compile(r"(?<![a-z0-9])" + re.escape(skill) + r"(?![a-z0-9])")) for skill in SKILLS
+]
+
+
 def extract_skills(text: str) -> list[str]:
     lowered = text.lower()
-    found = []
-    for skill in SKILLS:
-        pattern = r"(?<![a-z0-9])" + re.escape(skill) + r"(?![a-z0-9])"
-        if re.search(pattern, lowered):
-            found.append(skill)
-    return found
+    return [skill for skill, pattern in _SKILL_PATTERNS if pattern.search(lowered)]
 
 
 def extract_years_experience(text: str) -> float | None:

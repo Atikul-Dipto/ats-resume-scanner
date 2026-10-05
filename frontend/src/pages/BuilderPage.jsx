@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { exportDocument, resumes } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
@@ -32,6 +32,10 @@ export default function BuilderPage() {
   const [imported, setImported] = useState(false);
   const [tab, setTab] = useState("score");
   const [exporting, setExporting] = useState(null);
+  // "Tailor my resume for this job" from the job board: load that posting as
+  // the target job once the resume itself has loaded.
+  const [tailorJob, setTailorJob] = useState(() => location.state?.tailorJob || null);
+  const tailorApplied = useRef(false);
 
   const loadSaved = useCallback(() => {
     setLoadError(null);
@@ -75,6 +79,15 @@ export default function BuilderPage() {
     setTitle(draft?.title || "My resume");
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load once per resume / auth state
   }, [id, authStatus]);
+
+  useEffect(() => {
+    if (!doc || !tailorJob || tailorApplied.current) return;
+    tailorApplied.current = true;
+    setJd(tailorJob.description);
+    setTab("score");
+    if (location.state) navigate(location.pathname, { replace: true, state: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply once, after the resume loads
+  }, [doc, tailorJob]);
 
   // Anonymous drafts live in the browser until the user saves them to an account.
   useEffect(() => {
@@ -215,6 +228,15 @@ export default function BuilderPage() {
 
       <div className="builder-layout">
         <div className="builder-editor">
+          {tailorJob && (
+            <div className="notice notice--accent">
+              <span>
+                Tailoring for <strong>{tailorJob.title}</strong> at {tailorJob.company}. Its description is loaded as the
+                target job — the Score panel shows which of its keywords your resume is missing.
+              </span>
+              <button type="button" className="icon-btn" onClick={() => setTailorJob(null)} aria-label="Dismiss">✕</button>
+            </div>
+          )}
           {imported && (
             <div className="notice">
               Imported from your file. Automatic parsing isn&apos;t perfect — check each section before exporting.

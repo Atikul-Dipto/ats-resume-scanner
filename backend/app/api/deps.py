@@ -37,3 +37,12 @@ def get_current_user(user: Annotated[User | None, Depends(get_optional_user)]) -
 
 OptionalUser = Annotated[User | None, Depends(get_optional_user)]
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_admin_user(user: CurrentUser) -> User:
+    if not user.is_admin:
+        raise HTTPException(403, "Admin access required.")
+    return user
+
+
+AdminUser = Annotated[User, Depends(get_admin_user)]

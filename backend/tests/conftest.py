@@ -12,7 +12,10 @@ from pathlib import Path
 
 os.environ["ENVIRONMENT"] = "test"
 os.environ["ALLOWED_ORIGINS"] = "http://localhost:5173"
-for scope in ("analyze", "builder", "export", "jobs", "auth"):
+os.environ["ADMIN_EMAILS"] = "admin@example.com"
+# Tests trigger catalog syncs explicitly; never hit real job APIs in the background.
+os.environ["JOBS_SYNC_ENABLED"] = "false"
+for scope in ("analyze", "builder", "export", "jobs", "auth", "match"):
     os.environ[f"RATE_LIMIT_{scope.upper()}"] = "10000/minute"
 
 import pytest  # noqa: E402
@@ -25,6 +28,7 @@ from app.core.cache import MemoryCache, set_cache  # noqa: E402
 from app.core.config import Settings, get_settings  # noqa: E402
 from app.db.models import Base  # noqa: E402
 from app.db.session import reset_engine  # noqa: E402
+from app.jobs.matcher import reset_index  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 PG_URL = os.getenv("TEST_DATABASE_URL")
@@ -69,6 +73,7 @@ def database(_template_db, tmp_path, monkeypatch):
     get_settings.cache_clear()
     reset_engine()
     set_cache(MemoryCache())
+    reset_index()
     yield url
     reset_engine()
     set_cache(None)

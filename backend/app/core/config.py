@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     jwt_secret: str = DEV_JWT_SECRET
     jwt_expire_minutes: int = 60 * 24 * 7
     max_resumes_per_user: int = 25
+    # Comma-separated emails with admin rights (post and edit job listings).
+    # Env-only on purpose: nobody can grant themselves admin through the API.
+    admin_emails: str = ""
 
     # HTTP
     allowed_origins: str = "http://localhost:5173"
@@ -47,6 +50,7 @@ class Settings(BaseSettings):
     rate_limit_export: str = "20/minute"
     rate_limit_jobs: str = "20/minute"
     rate_limit_auth: str = "10/minute"
+    rate_limit_match: str = "30/minute"
 
     # Job search
     jobs_cache_ttl_seconds: int = 900
@@ -54,6 +58,14 @@ class Settings(BaseSettings):
     adzuna_app_id: str | None = None
     adzuna_app_key: str | None = None
     adzuna_country: str = "us"
+
+    # Job board: remote engineering/data jobs pulled from the public APIs into
+    # the catalog. Sync runs in the background when the catalog is read and
+    # the last sync is older than the interval (or via `python -m app.jobs.sync`).
+    jobs_sync_enabled: bool = True
+    jobs_sync_interval_hours: float = 6.0
+    jobs_external_max_age_days: int = 30
+    jobs_match_candidates: int = 2000
 
     # Anonymized usage logging for retraining the matching encoder.
     events_enabled: bool = True
@@ -65,6 +77,10 @@ class Settings(BaseSettings):
     @property
     def allowed_origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+
+    @property
+    def admin_emails_set(self) -> set[str]:
+        return {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
 
     @property
     def sqlalchemy_url(self) -> str:

@@ -1,9 +1,10 @@
 # Architecture
 
-ATS Resume Scanner + Builder. Version 2 turns the scanner prototype into a
-product that scales: scan an existing resume, open it in a structured builder,
-fix it against a live ATS score, export an ATS-safe PDF/DOCX, and optionally
-save versions to an account.
+ATS Resume Scanner + Builder + Job Board. Version 2 turns the scanner
+prototype into a product that scales: scan an existing resume, open it in a
+structured builder, fix it against a live ATS score, export an ATS-safe
+PDF/DOCX, optionally save versions to an account, and browse engineering and
+data jobs ranked by how well the resume fits each one.
 
 This document is the reference for how the system is put together, why, and
 what changes as load grows. Code paths are relative to the repo root.
@@ -75,12 +76,13 @@ backend/
     db/                     models.py (schema), session.py (engine), scans.py
     api/
       deps.py               DB session, optional/required current user
-      routes/               health · auth · analyze · builder · resumes · jobs
+      routes/               health · auth · analyze · builder · resumes · jobs · admin
     schemas/                Pydantic contracts (resume.py is the core model)
     parsers/                PDF/DOCX -> text + structural signals
     analysis/               scoring engine; pipeline.py is the single entry point
     builder/                layout -> text/PDF/DOCX, structural checks, importer
-    jobs/                   job-board providers + aggregator
+    jobs/                   job-API providers + live search aggregator, and the
+                            job board: taxonomy, catalog, catalog_sync, matcher
     matching/               encoder inference, anonymized event store, training
   alembic/                  migrations (0001_initial_schema)
   tests/                    ~80 tests, runnable against SQLite or Postgres
@@ -175,6 +177,54 @@ under an overall deadline (`JOBS_SEARCH_TIMEOUT_SECONDS`):
   job board degrades the results but never fails the request.
 - **Ranking:** keyword/title overlap, plus NumPy-encoder similarity.
 
+
+**Job board (`GET /api/jobs`, `POST /api/jobs/match`, `/api/admin/jobs`)**
+
+```mermaid
+flowchart LR
+    A[Admin<br/>ADMIN_EMAILS] -->|post / edit / hide| C[(jobs table)]
+    S[catalog_sync<br/>background, CLI, or admin button] -->|remote engineering roles,<br/>classified by discipline| C
+    C --> I[Match index<br/>TF-IDF matrix · encoder embeddings · skill sets<br/>cached per catalog version]
+    R[Resume<br/>scan draft · builder draft · saved resume] --> M[matcher]
+    I --> M --> O[ranked jobs + matched / missing skills + experience note]
+```
+
+- **Five disciplines** (`jobs/taxonomy.py`): Data & Analytics, Software & IT,
+  Civil & Construction, Electrical & Electronics, and Mechanical, Industrial &
+  Textile.
+  - Classification uses ordered keyword rules on the title, so "Data Engineer"
+    is Data and "Electrical Maintenance Engineer" is Electrical.
+  - For a candidate, signature skills break ties when the title is vague.
+  - Non-engineering roles return `None` and never enter the catalog.
+- **Two sources, one table.**
+  - Local listings are posted by admins. Admins exist only through the
+    `ADMIN_EMAILS` env var, so nobody can grant themselves admin through the
+    API.
+  - Remote roles are imported from the public APIs, upserted by
+    (source, URL), and kept only if they're remote. An on-site job in Berlin
+    is noise for a candidate in Dhaka.
+  - Imported jobs age out after `JOBS_EXTERNAL_MAX_AGE_DAYS` without being
+    seen. A job an admin hid stays hidden across re-imports.
+- **Sync never blocks a request.** When the catalog is read and the last import
+  is older than `JOBS_SYNC_INTERVAL_HOURS`, a background task starts. A cache
+  lock ensures one sync per lock window, and the staleness check itself is
+  cached.
+- **Matching:**
+  - Each job scores 0–100 from four parts:
+
+    | Component | Weight |
+    |---|---|
+    | Skill overlap (denominator capped at 12) | 0.50 |
+    | TF-IDF text similarity | 0.25 |
+    | Encoder similarity | 0.15 |
+    | Experience fit | 0.10 |
+
+  - **Cost per request:** the job side (TF-IDF matrix, embeddings, skill sets)
+    is built once per catalog version, keyed on count, `max(updated_at)` and
+    today's date. A match request then costs one resume vectorization plus a
+    dot product per job, not a model fit.
+  - **Privacy:** the resume travels in the request body and isn't stored.
+
 ---
 
 ## 6. Scaling model
@@ -224,6 +274,7 @@ The only per-process state is the cache, and §6.1 below covers that.
 | **0: now** | Portfolio traffic | 1 Render instance, Neon Postgres, in-memory cache. Migrations run in `start.sh`. |
 | **1: more than one instance** | Sustained CPU > 70 %, or p95 of `/api/analyze` > 2 s | Set `REDIS_URL` (Upstash free tier) so cache and rate limits are shared. Run migrations once per deploy (`RUN_MIGRATIONS=0` on web instances plus a pre-deploy job). Raise `WEB_CONCURRENCY` or the instance count. |
 | **2: CPU-bound work dominates** | Parse/export time is the bulk of instance CPU, or uploads queue behind the semaphore | Replace the body of `executor.run_cpu_bound()` with a Redis-backed job queue (e.g. arq) and a separate worker service. Routes don't change. If p95 then exceeds about 5 s, switch `/api/analyze` to submit-and-poll (`202` plus a job id). |
+| **2b: job catalog grows** | More than ~10k open jobs, or index rebuilds show up in p95 | Run `python -m app.jobs.sync` on a schedule (cron) with `JOBS_SYNC_ENABLED=false` on web instances. Precompute job embeddings at write time into `pgvector` and pre-filter candidates by discipline and skills in SQL before scoring. |
 | **3: data volume** | Event tables reach tens of millions of rows | Monthly partitioning or roll-ups of `*_events` with a retention job; a read replica for stats and training reads. |
 
 Deliberately **not** in the architecture: object storage. Uploads are never
@@ -266,6 +317,16 @@ erDiagram
       string source "upload | builder"
       float ats_score
     }
+    users ||--o{ jobs : "admin posts"
+    jobs {
+      string id PK
+      string source "local | remotive | ..."
+      string external_id "URL, unique per source"
+      string discipline
+      jsonb skills "normalized vocabulary"
+      date deadline
+      string status "draft | published | closed"
+    }
     resume_scan_events {
       int id PK
       string title
@@ -300,6 +361,7 @@ erDiagram
 | Credential stuffing / brute force | `RATE_LIMIT_AUTH`. Uniform 401s, and a dummy hash check for unknown emails so response timing doesn't reveal which accounts exist. |
 | Password theft from a DB leak | scrypt (N=2¹⁴, r=8, p=1) with a per-password salt; constant-time compare |
 | Token forgery | HS256 with a 32+ character secret. In production the app refuses to boot with the dev default. |
+| Job-board abuse | Posting is admin-only (env-configured). Apply links must be `http(s)` or `mailto` (validated on the API, checked again in the UI) so a `javascript:` URL can't be planted; imported descriptions are stripped to plain text and rendered as text. |
 | IDOR on resumes | Every query is scoped by `user_id`. Foreign resumes return 404, not 403. |
 | Lost updates | Version compare-and-swap (409) |
 | Malicious uploads | Extension *and* magic-byte checks; size cap read without buffering; page cap before parsing; parsing errors become 422 |
@@ -349,6 +411,7 @@ frontend/src/
 | Parsing | Multi-column detection on 5 layouts; DOCX list bullets; magic bytes; page cap | `test_parsers.py` |
 | Builder | Layout text, checks, PDF/DOCX ATS-cleanliness, score parity, Unicode/fallback fonts, importer round-trip | `test_builder.py` |
 | API | Auth, quotas, ownership isolation, version conflicts, uploads, rate limits, CORS, JSON 500s, job caching | `test_api_*.py` |
+| Job board | Discipline classifier; admin permissions and validation; filters and facets; ranking (data and civil resumes each rank their own discipline first); experience gaps; index refresh; import filtering, upsert, hidden-job persistence, ageing out; background-sync lock | `test_job_board.py` |
 | Migrations | Every test DB is built by `alembic upgrade head`; CI adds `alembic check` | `conftest.py`, CI |
 
 The whole suite runs on SQLite by default and on Postgres when
@@ -387,6 +450,15 @@ browser flow end to end:
   review each field.
 - **Fixed-window rate limits:** allow up to 2× the limit across a window
   boundary. Accepted for one cache round-trip per request.
-- **Skills vocabulary:** curated (`analysis/skills_data.py`) and
+- **Skills vocabulary:** curated (`analysis/skills_data.py`, now covering
+  data, software, civil, electrical and mechanical/textile terms) and
   English-centric. Keyword matching outside it relies on TF-IDF similarity
   only.
+- **Encoder on non-tech roles:** the matching encoder was trained on a
+  tech-heavy job corpus. It rates two *different* non-tech disciplines (e.g.
+  civil vs. textile) as fairly similar, which is why it gets only 15% of the
+  match score while skill overlap and TF-IDF dominate. Retraining once the
+  catalog holds local civil, electrical and textile postings will sharpen it.
+- **A small local catalog to start:** admins post local listings by hand,
+  so the board starts small. Imported remote roles fill software and data
+  first; civil, electrical and textile depend mostly on admin posts.

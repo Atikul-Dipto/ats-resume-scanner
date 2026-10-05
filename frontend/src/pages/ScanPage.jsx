@@ -39,6 +39,12 @@ export default function ScanPage() {
     });
   }
 
+  function findJobs() {
+    navigate("/jobs", {
+      state: { profile: { kind: "scan", label: fileName ? `${fileName} (scanned)` : "Scanned resume", document: result.draft_document } },
+    });
+  }
+
   return (
     <>
       <header className="app-header">
@@ -57,7 +63,7 @@ export default function ScanPage() {
       )}
 
       {!loading && result && (
-        <ResultsPanel result={result} onReset={() => setResult(null)} onOpenInBuilder={openInBuilder} />
+        <ResultsPanel result={result} onReset={() => setResult(null)} onOpenInBuilder={openInBuilder} onFindJobs={findJobs} />
       )}
     </>
   );

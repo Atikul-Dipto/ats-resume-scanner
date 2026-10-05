@@ -7,7 +7,7 @@ import SuggestionsList from "./SuggestionsList.jsx";
 import FlaggedLines from "./FlaggedLines.jsx";
 import JobSearchPanel from "./JobSearchPanel.jsx";
 
-export default function ResultsPanel({ result, onReset, onOpenInBuilder }) {
+export default function ResultsPanel({ result, onReset, onOpenInBuilder, onFindJobs }) {
   return (
     <div className="results-panel">
       <div className="results-header">
@@ -16,7 +16,12 @@ export default function ResultsPanel({ result, onReset, onOpenInBuilder }) {
         {onOpenInBuilder && (
           <div className="results-cta">
             <p>Fix these issues in the builder — we&apos;ve pre-filled it from your file, with a live score as you edit.</p>
-            <button type="button" onClick={onOpenInBuilder}>Open in builder →</button>
+            <div className="results-cta__buttons">
+              <button type="button" onClick={onOpenInBuilder}>Open in builder →</button>
+              {onFindJobs && (
+                <button type="button" className="btn-ghost" onClick={onFindJobs}>Match me to jobs</button>
+              )}
+            </div>
           </div>
         )}
       </div>

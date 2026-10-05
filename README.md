@@ -1,12 +1,13 @@
-# ATS Resume Scanner + Builder
+# ATS Resume Scanner + Builder + Job Board
 
 **Live demo**: https://atikul-dipto.github.io/ats-resume-scanner/
 (the API runs on Render's free tier — the first request after idle can take ~30–50s to wake up)
 
 Scan an existing resume for ATS (Applicant Tracking System) problems, open it in a structured
 builder pre-filled from your file, fix it against a **live** ATS score, tailor it to a job
-posting, and export an ATS-safe PDF or DOCX. Then search live job boards for roles that match.
-Accounts are optional — they add saved resumes, versions, and score history.
+posting, and export an ATS-safe PDF or DOCX. Then browse engineering and data jobs ranked by how
+well your resume fits each one. Accounts are optional — they add saved resumes, versions, and
+score history.
 
 → **[ARCHITECTURE.md](ARCHITECTURE.md)** for the system design, scaling model, data model,
 security controls, and decision log.
@@ -31,7 +32,18 @@ security controls, and decision log.
 - Anonymous drafts autosave in the browser; signed-in users get saved resumes with optimistic
   locking (two tabs can't silently overwrite each other) and per-resume score history.
 
-**Match jobs** (`/api/jobs/search`)
+**Job board** (`/api/jobs`, `/api/jobs/match`, `/api/admin/jobs`)
+- Engineering & data catalog in five disciplines: Data & Analytics (data/business analyst, BI,
+  data engineering), Software & IT, Civil & Construction, Electrical & Electronics, and
+  Mechanical, Industrial & Textile.
+- Local (Bangladesh) listings are posted by admins (`ADMIN_EMAILS`); remote roles are imported
+  from the public job APIs below, classified by discipline, and refreshed in the background.
+- **Match me**: upload a resume, or use the builder draft / a saved resume, and every listing gets
+  a match score with the skills you have, the skills you're missing, and an experience-fit note.
+  The detected discipline is pre-selected. "Tailor my resume for this job" opens the builder with
+  that posting as the target job.
+
+**Live job search** (`/api/jobs/search`)
 - Queries documented public APIs concurrently — [Remotive](https://remotive.com/api-documentation),
   [Arbeitnow](https://www.arbeitnow.com/api/job-board-api), [The Muse](https://www.themuse.com/developers/api/v2),
   and optionally [Adzuna](https://developer.adzuna.com/) — with caching, a per-request deadline,

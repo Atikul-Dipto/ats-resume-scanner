@@ -12,7 +12,9 @@ export default function NavBar({ themeId, onThemeChange }) {
       <div className="navbar__links">
         <NavLink to="/" end>Scan</NavLink>
         <NavLink to="/builder">Builder</NavLink>
+        <NavLink to="/jobs">Jobs</NavLink>
         {status === "authenticated" && <NavLink to="/resumes">My resumes</NavLink>}
+        {user?.is_admin && <NavLink to="/admin/jobs">Admin</NavLink>}
       </div>
       <div className="navbar__right">
         <ThemeSwitcher activeId={themeId} onChange={onThemeChange} />

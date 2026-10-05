@@ -7,6 +7,7 @@ import App from "./App.jsx";
 import { AuthProvider } from "./auth/AuthContext.jsx";
 import "./index.css";
 import "./builder.css";
+import "./jobs.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

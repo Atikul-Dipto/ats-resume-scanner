@@ -7,7 +7,7 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import analyze, auth, builder, health, jobs, resumes
+from app.api.routes import admin, analyze, auth, builder, health, jobs, resumes
 from app.core import executor
 from app.core.config import get_settings
 from app.core.logging import RequestContextMiddleware, configure_logging
@@ -54,7 +54,7 @@ def create_app() -> FastAPI:
         max_age=600,
     )
 
-    for module in (health, auth, analyze, builder, resumes, jobs):
+    for module in (health, auth, analyze, builder, resumes, jobs, admin):
         app.include_router(module.router)
     return app
 

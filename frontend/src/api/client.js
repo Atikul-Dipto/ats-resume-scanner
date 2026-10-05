@@ -141,3 +141,30 @@ export const resumes = {
   remove: (id) => request(`/api/resumes/${id}`, { method: "DELETE" }),
   scans: (id) => request(`/api/resumes/${id}/scans`),
 };
+
+// --- job board ---
+const query = (params) => {
+  const qs = new URLSearchParams();
+  Object.entries(params || {}).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") qs.set(k, v);
+  });
+  const s = qs.toString();
+  return s ? `?${s}` : "";
+};
+
+export const jobs = {
+  list: (params) => request(`/api/jobs${query(params)}`),
+  get: (id) => request(`/api/jobs/${id}`),
+  match: (document, filters, signal) =>
+    request("/api/jobs/match", { method: "POST", json: { document, ...filters }, signal }),
+};
+
+export const adminJobs = {
+  list: (params) => request(`/api/admin/jobs${query(params)}`),
+  get: (id) => request(`/api/admin/jobs/${id}`),
+  create: (job) => request("/api/admin/jobs", { method: "POST", json: job }),
+  update: (id, job) => request(`/api/admin/jobs/${id}`, { method: "PUT", json: job }),
+  setStatus: (id, status) => request(`/api/admin/jobs/${id}/status`, { method: "POST", json: { status } }),
+  remove: (id) => request(`/api/admin/jobs/${id}`, { method: "DELETE" }),
+  sync: () => request("/api/admin/jobs/sync", { method: "POST" }),
+};
