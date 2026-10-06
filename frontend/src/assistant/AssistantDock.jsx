@@ -18,6 +18,7 @@ const SUGGESTIONS = {
   jobsWithResume: ["Which jobs fit me best?", "Which skills am I missing most?"],
   jobs: ["Find remote software jobs", "Find civil engineering jobs in Bangladesh", "What jobs suit a fresh EEE graduate?"],
   job: ["Am I a good fit for this job?", "Write a cover letter for this job", "Summarize this job for me"],
+  market: ["Which skills should I learn next?", "Who is hiring data analysts right now?", "What do these trends mean for my career?"],
   admin: ["Write a job description for a Data Analyst", "Write a JD for a Civil Site Engineer and save it as a draft"],
   other: ["Recommend jobs for a data analyst", "How do I make my resume ATS-friendly?", "Write a job description"],
 };
@@ -27,6 +28,7 @@ const CONTEXT_LABEL = {
   scan: "Reading your scanned resume",
   jobs: "Browsing the job board",
   job: "Looking at this job",
+  market: "Reading Work Signal",
   admin: "Admin · job postings",
 };
 

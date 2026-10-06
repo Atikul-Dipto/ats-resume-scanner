@@ -35,6 +35,7 @@ export default function NavBar({ mode, onModeChange }) {
     ["/scan", "Scan"],
     ["/builder", "Builder"],
     ["/jobs", "Jobs"],
+    ["/market", "Work Signal"],
     ...(status === "authenticated" ? [["/resumes", "My resumes"]] : []),
     ...(user?.is_admin ? [["/admin/jobs", "Admin"]] : []),
   ];

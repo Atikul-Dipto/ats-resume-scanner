@@ -163,6 +163,46 @@ SMARTRECRUITERS = {"totalFound": 1, "content": [
 ]}
 
 
+WORKABLE = {"name": "Example Digital Ltd", "jobs": [
+    {"title": "Software Engineer (Backend)", "url": "https://apply.workable.com/j/ABC123", "telecommuting": False,
+     "employment_type": "Full-time", "description": "<p>Python, Django and PostgreSQL</p>",
+     "locations": [{"city": "Dhaka", "country": "Bangladesh", "countryCode": "BD"}]},
+    {"title": "Sales Manager", "url": "https://apply.workable.com/j/ABC999",
+     "locations": [{"city": "Dhaka", "country": "Bangladesh"}]},
+]}
+RECRUITEE = {"offers": [
+    {"title": "Data Engineer", "status": "published", "careers_url": "https://acme.recruitee.com/o/data-engineer",
+     "location": "Dhaka, Bangladesh", "remote": False, "employment_type_code": "fulltime",
+     "description": "<p>Build Airflow pipelines</p>", "requirements": "<ul><li>SQL</li></ul>"},
+    {"title": "QA Engineer (closed)", "status": "closed", "careers_url": "https://acme.recruitee.com/o/qa"},
+]}
+
+
+def test_workable_and_recruitee_sources(client):
+    cfg = config(
+        {"name": "example-wk", "type": "workable", "board": "examplebd"},
+        {"name": "acme-rc", "type": "recruitee", "board": "acme", "company": "Acme BD"},
+    )
+    http = mock_http({
+        "https://apply.workable.com/api/v1/widget/accounts/examplebd": WORKABLE,
+        "https://acme.recruitee.com/api/offers/": RECRUITEE,
+    })
+    summary = asyncio.run(run(cfg, http=http))
+    by = {r["source"]: r for r in summary["sources"]}
+    assert by["example-wk"]["kept"] == 1 and by["acme-rc"]["kept"] == 1
+    jobs = {j["title"]: j for j in client.get("/api/jobs").json()["items"]}
+    se = jobs["Software Engineer (Backend)"]
+    assert (se["company"], se["location"], se["source"]) == ("Example Digital Ltd", "Dhaka, Bangladesh", "wk:example-wk")
+    assert se["apply_url"] == "https://apply.workable.com/j/ABC123" and se["workplace"] == "onsite"
+    de = jobs["Data Engineer"]
+    assert de["company"] == "Acme BD" and de["discipline"] == "data" and de["source"] == "rc:acme-rc"
+
+
+def test_board_ids_are_safe_hostname_labels():
+    with pytest.raises(ValueError):
+        config({"name": "evil", "type": "recruitee", "board": "evil.com/x?"})
+
+
 def test_ats_sources_end_to_end(client):
     cfg = config(
         {"name": "acme-gh", "type": "greenhouse", "board": "acme", "company": "Acme"},

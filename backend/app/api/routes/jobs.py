@@ -32,6 +32,7 @@ def list_jobs(
     db: DbSession,
     discipline: Discipline | None = None,
     q: Annotated[str | None, Query(max_length=100)] = None,
+    skill: Annotated[str | None, Query(max_length=60)] = None,
     workplace: Workplace | None = None,
     employment_type: EmploymentType | None = None,
     source: Literal["local", "remote"] | None = None,
@@ -39,7 +40,7 @@ def list_jobs(
     page_size: Annotated[int, Query(ge=1, le=50)] = 20,
 ):
     return list_open_jobs(
-        db, discipline=discipline, q=(q or "").strip() or None, workplace=workplace,
+        db, discipline=discipline, q=(q or "").strip() or None, skill=(skill or "").strip() or None, workplace=workplace,
         employment_type=employment_type, source=source, page=page, page_size=page_size,
     )
 
@@ -54,7 +55,7 @@ async def match_jobs(body: MatchRequest):
     the builder, a saved resume, or a scanned upload's draft) and isn't stored."""
     return await run_cpu_bound(
         match_document, body.document, discipline=body.discipline, workplace=body.workplace,
-        source=body.source, q=body.q, limit=body.limit,
+        source=body.source, q=body.q, skill=body.skill, limit=body.limit,
     )
 
 

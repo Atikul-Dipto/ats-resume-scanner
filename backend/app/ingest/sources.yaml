@@ -12,6 +12,8 @@
 #   lever            board: the company's Lever slug              (jobs.lever.co/<board>)
 #   ashby            board: the company's Ashby job board name    (jobs.ashbyhq.com/<board>)
 #   smartrecruiters  board: the company identifier                (jobs.smartrecruiters.com/<board>)
+#   workable         board: the company's Workable account         (apply.workable.com/<board>)
+#   recruitee        board: the company's Recruitee subdomain      (<board>.recruitee.com)
 #   jsonld_pages     career pages with schema.org JobPosting data (urls: / sitemap:)
 #   html_list        a job listing page read with CSS selectors
 #
@@ -48,6 +50,28 @@ sources:
   - {name: supabase, type: ashby, board: supabase, company: Supabase}
   - {name: n8n, type: ashby, board: n8n, company: n8n}
   - {name: duckduckgo, type: ashby, board: duck-duck-go, company: DuckDuckGo}
+
+  # --- Employers hiring in Bangladesh (official job feeds) ---------------
+  # CANDIDATES: verified by the pull-request dry run; ones that don't return jobs get removed.
+  - {name: optimizely, type: greenhouse, board: optimizely, company: Optimizely}
+  - {name: augmedix, type: greenhouse, board: augmedix, company: Augmedix}
+  - {name: field-nation, type: greenhouse, board: fieldnation, company: Field Nation}
+  - {name: delivery-hero, type: smartrecruiters, board: DeliveryHero, company: Delivery Hero (foodpanda)}
+  - {name: shopup, type: lever, board: shopup, company: ShopUp}
+  - {name: chaldal, type: lever, board: chaldal, company: Chaldal}
+  - {name: pathao, type: lever, board: pathao, company: Pathao}
+  - {name: shikho, type: lever, board: shikho, company: Shikho}
+  - {name: selise, type: workable, board: selise, company: SELISE}
+  - {name: cefalo, type: workable, board: cefalo, company: Cefalo}
+  - {name: vivasoft, type: workable, board: vivasoft, company: Vivasoft}
+  - {name: brain-station-23, type: workable, board: brain-station-23, company: Brain Station 23}
+  - {name: kaz-software, type: workable, board: kaz-software, company: Kaz Software}
+  - {name: welldev, type: workable, board: welldev, company: WellDev}
+  - {name: enosis, type: workable, board: enosis, company: Enosis Solutions}
+  - {name: therap-bd, type: workable, board: therap, company: Therap (BD)}
+  - {name: dsi, type: workable, board: dsinnovators, company: Dynamic Solution Innovators}
+  - {name: craftsmen, type: recruitee, board: craftsmen, company: Craftsmen}
+  - {name: bs23-recruitee, type: recruitee, board: brainstation23, company: Brain Station 23}
 
   # --- Templates: copy, fill in, and enable once the terms allow it -------
   - name: example-careers
