@@ -97,7 +97,7 @@ jobs:
         if: always()
         run: |
           python -m app.jobs.indicators > indicators.json && status=ok || status=failed
-          python - "$status" <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          python - "$status" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
           import json, sys
           print(f"\n### Bangladesh labour indicators: {sys.argv[1]}\n")
           try:
