@@ -109,6 +109,7 @@ class MatchRequest(BaseModel):
     workplace: Workplace | None = None
     source: Literal["local", "remote"] | None = None
     q: Annotated[str, StringConstraints(strip_whitespace=True, max_length=100)] | None = None
+    skill: Annotated[str, StringConstraints(strip_whitespace=True, max_length=60)] | None = None
     limit: Annotated[int, Field(ge=1, le=50)] = 20
 
 

@@ -19,6 +19,7 @@ from app.core.executor import run_cpu_bound
 from app.db.models import AssistantMemory, Job
 from app.db.session import get_session_factory
 from app.jobs.catalog import job_to_dict, list_open_jobs, normalize_skills, open_condition
+from app.jobs.market import compute_market
 from app.jobs.matcher import match_document
 from app.schemas.jobs import Discipline, JobIn, Workplace
 from app.schemas.resume import ResumeDocument
@@ -115,6 +116,16 @@ GET_JOB = _tool(
     {"job_id": {"type": "string"}},
     ["job_id"],
 )
+MARKET_SIGNAL = _tool(
+    "market_signal",
+    "Job-market signals from Prottoy's open listings: most-demanded skills (with recent vs previous two weeks), "
+    "top hiring companies and locations, work-mode split, and median monthly salary where postings list one.",
+    {
+        "discipline": {"type": "string", "enum": DISCIPLINES},
+        "workplace": {"type": "string", "enum": WORKPLACES},
+    },
+    [],
+)
 REMEMBER = _tool(
     "remember",
     "Save a durable fact about the user for future conversations, e.g. 'Targets junior data analyst roles in Dhaka' "
@@ -153,7 +164,7 @@ def tools_for(ctx: ToolContext) -> list[dict]:
         tools.append(SCORE_RESUME)
     if ctx.document is not None and ctx.editable:
         tools.append(SUGGEST_EDITS)
-    tools += [FIND_JOBS, GET_JOB, REMEMBER]
+    tools += [FIND_JOBS, GET_JOB, MARKET_SIGNAL, REMEMBER]
     if ctx.is_admin:
         tools.append(SAVE_JOB_DRAFT)
     return tools
@@ -189,6 +200,11 @@ class FindJobsIn(BaseModel):
 
 class GetJobIn(BaseModel):
     job_id: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=64)]
+
+
+class MarketIn(BaseModel):
+    discipline: Discipline | None = None
+    workplace: Workplace | None = None
 
 
 class RememberIn(BaseModel):
@@ -331,6 +347,29 @@ async def get_job(ctx: ToolContext, args: GetJobIn) -> str:
     return "\n".join(facts) + f"\n<job_posting>\n{description}\n</job_posting>"
 
 
+async def market_signal(ctx: ToolContext, args: MarketIn) -> str:
+    def load():
+        with get_session_factory()() as db:
+            return compute_market(db, discipline=args.discipline, workplace=args.workplace)
+    m = await run_in_threadpool(load)
+    t = m["totals"]
+    if not t["open_jobs"]:
+        return "No open jobs match those filters right now."
+    salary = m["salary"]
+    lines = [
+        f"{t['open_jobs']} open jobs from {t['companies']} companies; {t['new_7d']} new this week; "
+        f"{t['remote_jobs']} remote, {t['local_jobs']} in Bangladesh.",
+        "Top skills (open jobs | last 14 days vs the 14 before): " + "; ".join(
+            f"{s['name']} {s['count']} ({s['recent']} vs {s['previous']})" for s in m["skills"]),
+        "Top hiring companies: " + ", ".join(f"{c['name']} ({c['count']})" for c in m["companies"]),
+        "Locations: " + ", ".join(f"{c['name']} ({c['count']})" for c in m["locations"]),
+        "Work mode: " + ", ".join(f"{w['key']} {w['count']}" for w in m["workplaces"]),
+        (f"Median salary: BDT {salary['median']:,}/month from {salary['samples']} postings that list one"
+         if salary["median"] else f"Salary: only {salary['samples']} postings list one; too few for a median."),
+    ]
+    return "\n".join(lines)
+
+
 async def remember(ctx: ToolContext, args: RememberIn) -> str:
     if ctx.user_id is None:
         ctx.emit("memory", {"fact": args.fact, "stored": "browser"})
@@ -375,6 +414,7 @@ HANDLERS = {
     "suggest_edits": (SuggestIn, suggest_edits),
     "find_jobs": (FindJobsIn, find_jobs),
     "get_job": (GetJobIn, get_job),
+    "market_signal": (MarketIn, market_signal),
     "remember": (RememberIn, remember),
     "save_job_draft": (None, save_job_draft),
 }

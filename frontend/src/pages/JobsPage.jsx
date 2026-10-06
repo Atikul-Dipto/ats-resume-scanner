@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { jobs as jobsApi } from "../api/client.js";
 import { DISCIPLINES, WORKPLACES, loadProfile, saveProfile } from "../jobs/format.js";
 import JobCard from "../jobs/JobCard.jsx";
@@ -7,6 +7,8 @@ import ProfilePicker from "../jobs/ProfilePicker.jsx";
 import { useAssistantPage } from "../assistant/AssistantContext.jsx";
 
 const PAGE_SIZE = 20;
+const FILTER_KEYS = ["discipline", "workplace", "source", "q", "skill"];
+const filtersFrom = (params) => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k)?.trim() || ""]));
 
 export default function JobsPage() {
   const location = useLocation();
@@ -17,8 +19,10 @@ export default function JobsPage() {
     return handoff || loadProfile();
   });
   useAssistantPage({ page: "jobs", document: profile?.document });
-  const [filters, setFilters] = useState({ discipline: "", workplace: "", source: "", q: "" });
-  const [searchInput, setSearchInput] = useState("");
+  // Filters can arrive in the URL (#/jobs?skill=sql&discipline=data), e.g. from Work Signal.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [filters, setFilters] = useState(() => filtersFrom(searchParams));
+  const [searchInput, setSearchInput] = useState(() => searchParams.get("q") || "");
   const [page, setPage] = useState(1);
   const [catalog, setCatalog] = useState(null);
   const [match, setMatch] = useState(null);
@@ -39,6 +43,21 @@ export default function JobsPage() {
     }, 350);
     return () => clearTimeout(t);
   }, [searchInput]);
+
+  const paramsKey = searchParams.toString();
+  useEffect(() => {
+    const next = filtersFrom(new URLSearchParams(paramsKey));
+    setFilters((f) => (JSON.stringify(f) === JSON.stringify(next) ? f : next));
+    setSearchInput(next.q);
+    setPage(1);
+  }, [paramsKey]);
+
+  function clearSkill() {
+    const next = new URLSearchParams(searchParams);
+    next.delete("skill");
+    setSearchParams(next, { replace: true });
+    setFilters((f) => ({ ...f, skill: "" }));
+  }
 
   const profileKey = profile ? `${profile.kind}:${profile.label}` : null;
 
@@ -69,6 +88,7 @@ export default function JobsPage() {
         workplace: filters.workplace || null,
         source: filters.source || null,
         q: filters.q || null,
+        skill: filters.skill || null,
         limit: 50,
       }, controller.signal)
       .then((data) => {
@@ -152,6 +172,13 @@ export default function JobsPage() {
           </select>
         </div>
       </div>
+
+      {filters.skill && (
+        <p className="skill-filter">
+          Showing jobs that ask for <strong>{filters.skill}</strong>
+          <button type="button" className="icon-btn" onClick={clearSkill} aria-label={`Remove the ${filters.skill} filter`}>✕</button>
+        </p>
+      )}
 
       {error && <p className="error-text">⚠ {error}</p>}
       {loading && !items && <p className="no-issues">Loading jobs…</p>}

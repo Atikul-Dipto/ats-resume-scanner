@@ -17,6 +17,17 @@ security controls, and decision log.
 
 ## What it does
 
+**Work Signal** (`/api/market`, `#/market`)
+- Job-market signals computed only from Prottoy's real open listings, with no sample data:
+  - most-demanded skills, with the last two weeks against the two before
+  - companies hiring most, locations, and work-mode split
+  - new jobs per week
+  - median salary, counted only from postings that state one
+- Every skill, company and number links to the postings behind it (`#/jobs?skill=…`).
+- Shown alongside official Bangladesh labour statistics (unemployment, youth and graduate
+  unemployment, participation, employment by sector) from the World Bank's public API (ILO modeled
+  estimates, CC BY 4.0), fetched server-side and cached for a day.
+
 **AI assistant** (`/api/assistant/*`, `backend/app/assistant`)
 - A chat panel on every page, powered by Claude, that knows what you're looking at: your resume
   in the builder or scanner, a job posting, or the admin page.

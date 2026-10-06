@@ -11,6 +11,7 @@ export const EMPLOYMENT_TYPES = { full_time: "Full-time", part_time: "Part-time"
 const SOURCE_NAMES = { remotive: "Remotive", arbeitnow: "Arbeitnow", themuse: "The Muse", adzuna: "Adzuna" };
 // Ingested sources are "<kind>:<name>" (see backend/app/ingest/models.py).
 const SOURCE_KINDS = { gh: "company careers", lv: "company careers", ab: "company careers", sr: "company careers",
+  wk: "company careers", rc: "company careers",
   ld: "company careers", web: "job board" };
 
 export function sourceLabel(source) {

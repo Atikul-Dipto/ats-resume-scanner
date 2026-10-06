@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.schemas.resume import ResumeDocument
 
-Page = Literal["home", "scan", "builder", "jobs", "job", "admin", "resumes", "other"]
+Page = Literal["home", "scan", "builder", "jobs", "job", "market", "admin", "resumes", "other"]
 
 
 class ChatMessage(BaseModel):

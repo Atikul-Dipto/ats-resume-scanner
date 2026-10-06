@@ -12,6 +12,7 @@ import "./shell.css";
 import "./home.css";
 import "./paperfield.css";
 import "./assistant.css";
+import "./market.css";
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

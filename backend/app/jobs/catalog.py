@@ -2,7 +2,7 @@
 
 from datetime import UTC, date, datetime
 
-from sqlalchemy import case, func, or_, select
+from sqlalchemy import String, case, cast, func, or_, select
 from sqlalchemy.orm import Session
 
 from app.analysis.profile_extractor import extract_skills
@@ -66,7 +66,7 @@ def _like(term: str) -> str:
     return f"%{escaped}%"
 
 
-def apply_filters(stmt, *, q=None, workplace=None, employment_type=None, source=None):
+def apply_filters(stmt, *, q=None, workplace=None, employment_type=None, source=None, skill=None):
     if q:
         pattern = _like(q)
         stmt = stmt.where(or_(
@@ -74,6 +74,9 @@ def apply_filters(stmt, *, q=None, workplace=None, employment_type=None, source=
             func.lower(Job.company).like(pattern, escape="\\"),
             func.lower(Job.location).like(pattern, escape="\\"),
         ))
+    if skill:
+        # skills is a JSON list of normalized lowercase names; match one whole entry.
+        stmt = stmt.where(func.lower(cast(Job.skills, String)).like(_like(f'"{skill.lower()}"'), escape="\\"))
     if workplace:
         stmt = stmt.where(Job.workplace == workplace)
     if employment_type:

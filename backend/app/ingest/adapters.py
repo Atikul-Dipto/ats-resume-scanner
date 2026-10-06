@@ -6,6 +6,8 @@ Official APIs (no robots check — they exist for programmatic access):
   lever            https://github.com/lever/postings-api
   ashby            https://developers.ashbyhq.com/docs/public-job-posting-api
   smartrecruiters  https://developers.smartrecruiters.com/docs/posting-api
+  workable         the public jobs widget API (apply.workable.com/api/v1/widget/accounts/<account>)
+  recruitee        the public careers-site API (<company>.recruitee.com/api/offers/)
 Scraping (robots.txt checked for every URL, and only with terms_ok: true):
   jsonld_pages     schema.org JobPosting embedded in career pages
   html_list        a listing page read with CSS selectors
@@ -202,11 +204,59 @@ async def fetch_html_list(client: PoliteClient, src: SourceConfig, prefilter: Pr
     return postings
 
 
+def _place(*parts) -> str:
+    return ", ".join(dict.fromkeys(p.strip() for p in parts if p and p.strip()))
+
+
+async def fetch_workable(client: PoliteClient, src: SourceConfig, prefilter: PrefilterFn) -> list[Posting]:
+    url = f"https://apply.workable.com/api/v1/widget/accounts/{src.board}?details=true"
+    data = (await client.get(url, check_robots=False)).json()
+    postings = []
+    for job in data.get("jobs", []) if isinstance(data, dict) else []:
+        title = job.get("title", "")
+        if not prefilter(title):
+            continue
+        places = job.get("locations") or [{}]
+        location = _place(places[0].get("city") or job.get("city"), places[0].get("country") or job.get("country"))
+        postings.append(Posting(
+            title=title,
+            company=src.company or data.get("name") or src.board,
+            url=job.get("url") or job.get("application_url") or job.get("shortlink", ""),
+            location=location,
+            description=html_to_text(job.get("description") or ""),
+            remote=True if job.get("telecommuting") else None,
+            employment_type=employment_from(job.get("employment_type")),
+        ))
+    return postings
+
+
+async def fetch_recruitee(client: PoliteClient, src: SourceConfig, prefilter: PrefilterFn) -> list[Posting]:
+    data = (await client.get(f"https://{src.board}.recruitee.com/api/offers/", check_robots=False)).json()
+    postings = []
+    for job in data.get("offers", []) if isinstance(data, dict) else []:
+        title = job.get("title", "")
+        if job.get("status", "published") != "published" or not prefilter(title):
+            continue
+        description = "\n\n".join(html_to_text(job.get(k) or "") for k in ("description", "requirements") if job.get(k))
+        postings.append(Posting(
+            title=title,
+            company=src.company or job.get("company_name") or src.board,
+            url=job.get("careers_url") or job.get("careers_apply_url", ""),
+            location=job.get("location") or _place(job.get("city"), job.get("country")),
+            description=description,
+            remote=True if job.get("remote") else None,
+            employment_type=employment_from(job.get("employment_type_code")),
+        ))
+    return postings
+
+
 FETCHERS: dict[str, Callable[[PoliteClient, SourceConfig, PrefilterFn], Awaitable[list[Posting]]]] = {
     "greenhouse": fetch_greenhouse,
     "lever": fetch_lever,
     "ashby": fetch_ashby,
     "smartrecruiters": fetch_smartrecruiters,
+    "workable": fetch_workable,
+    "recruitee": fetch_recruitee,
     "jsonld_pages": fetch_jsonld_pages,
     "html_list": fetch_html_list,
 }

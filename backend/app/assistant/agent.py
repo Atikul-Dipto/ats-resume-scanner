@@ -32,6 +32,7 @@ STATUS = {
     "suggest_edits": "Preparing suggestions",
     "find_jobs": "Searching jobs",
     "get_job": "Reading the job posting",
+    "market_signal": "Reading the job market",
     "remember": "Remembering that",
     "save_job_draft": "Saving the job draft",
 }

@@ -147,7 +147,7 @@ def test_text_reply_streams_with_context(client, enabled):
     assert call["fallbacks"] == "default" and call["betas"] == ["server-side-fallback-2026-07-01"]
     assert call["system"][0]["cache_control"] == {"type": "ephemeral"}
     # No resume open: no resume tools; jobs and memory tools only.
-    assert [t["name"] for t in call["tools"]] == ["find_jobs", "get_job", "remember"]
+    assert [t["name"] for t in call["tools"]] == ["find_jobs", "get_job", "market_signal", "remember"]
     assert all(t["eager_input_streaming"] for t in call["tools"])
     # History is passed through; context rides only on the newest message.
     assert call["messages"][:2] == [{"role": "user", "content": "earlier"},
@@ -210,7 +210,8 @@ def test_score_and_suggest_edits(client, enabled, sample_document):
     assert reply(events) == "Let me check. \n\nDone — apply the suggestions you like."
 
     first, second = fake.calls
-    assert [t["name"] for t in first["tools"]] == ["score_resume", "suggest_edits", "find_jobs", "get_job", "remember"]
+    assert [t["name"] for t in first["tools"]] == [
+        "score_resume", "suggest_edits", "find_jobs", "get_job", "market_signal", "remember"]
     assert "[0.1] Led migration of 30 dashboards" in latest_user_text(first)
     results = second["messages"][-1]["content"]
     assert [r["tool_use_id"] for r in results] == ["toolu_score_resume", "toolu_suggest_edits"]

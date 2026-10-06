@@ -6,17 +6,20 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, model_validator
 
-SourceType = Literal["public_apis", "greenhouse", "lever", "ashby", "smartrecruiters", "jsonld_pages", "html_list"]
+SourceType = Literal[
+    "public_apis", "greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee", "jsonld_pages", "html_list",
+]
 LocationPolicy = Literal["remote_or_bangladesh", "remote", "bangladesh", "any"]
 
 # Types that read pages a site serves to browsers (rather than an API the
 # site offers for programmatic use) — these must honour robots.txt and need
 # the operator to confirm the site's terms allow it.
 SCRAPING_TYPES = {"jsonld_pages", "html_list"}
+BOARD_TYPES = {"greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee"}
 
 # Short prefixes keep "<prefix>:<name>" inside the 30-char jobs.source column.
 SOURCE_PREFIX = {
-    "greenhouse": "gh", "lever": "lv", "ashby": "ab", "smartrecruiters": "sr",
+    "greenhouse": "gh", "lever": "lv", "ashby": "ab", "smartrecruiters": "sr", "workable": "wk", "recruitee": "rc",
     "jsonld_pages": "ld", "html_list": "web",
 }
 
@@ -56,7 +59,8 @@ class SourceConfig(BaseModel):
     type: SourceType
     enabled: bool = True
     company: str | None = None  # display name for single-company boards
-    board: str | None = None  # greenhouse/lever/ashby/smartrecruiters board id
+    # ATS board id. Also used as a hostname label (recruitee), so kept to safe characters.
+    board: str | None = Field(default=None, pattern=r"^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$")
     keywords: list[str] = []
     location_policy: LocationPolicy | None = None
     # Scraping-only settings
@@ -71,7 +75,7 @@ class SourceConfig(BaseModel):
 
     @model_validator(mode="after")
     def _check(self):
-        if self.type in {"greenhouse", "lever", "ashby", "smartrecruiters"} and not self.board:
+        if self.type in BOARD_TYPES and not self.board:
             raise ValueError(f"{self.name}: '{self.type}' sources need a 'board'.")
         if self.type == "html_list" and (not self.selectors or not self.urls):
             raise ValueError(f"{self.name}: html_list sources need 'urls' and 'selectors'.")
@@ -91,7 +95,7 @@ class SourceConfig(BaseModel):
     def complete(self) -> bool:
         """True when one fetch returns the source's *entire* current list, so a
         job missing from a successful fetch has been filled or withdrawn."""
-        return self.type in {"greenhouse", "lever", "ashby", "smartrecruiters"}
+        return self.type in BOARD_TYPES
 
 
 class IngestConfig(BaseModel):

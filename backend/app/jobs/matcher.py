@@ -114,7 +114,7 @@ def _experience_fit(years: float | None, minimum: float | None, maximum: float |
     return max(0.0, 1 - gap / max(minimum, 1)), f"Asks for {minimum:g}+ years; your resume shows about {years:g}."
 
 
-def _passes(job: dict, discipline, workplace, source, q) -> bool:
+def _passes(job: dict, discipline, workplace, source, q, skill=None) -> bool:
     if discipline and job["discipline"] != discipline:
         return False
     if workplace and job["workplace"] != workplace:
@@ -122,6 +122,8 @@ def _passes(job: dict, discipline, workplace, source, q) -> bool:
     if source == "local" and job["source"] != "local":
         return False
     if source == "remote" and job["source"] == "local":
+        return False
+    if skill and skill.lower() not in job["skills"]:
         return False
     if q:
         needle = q.lower()
@@ -131,7 +133,7 @@ def _passes(job: dict, discipline, workplace, source, q) -> bool:
 
 
 def match_document(
-    doc: ResumeDocument, *, discipline=None, workplace=None, source=None, q=None, limit: int = 20
+    doc: ResumeDocument, *, discipline=None, workplace=None, source=None, q=None, skill=None, limit: int = 20
 ) -> dict:
     text = render_text(doc)
     title = next((e.title for e in doc.experience if e.title), None) or doc.basics.headline or None
@@ -157,7 +159,7 @@ def match_document(
 
     results = []
     for i, job in enumerate(index.jobs):
-        if not _passes(job, discipline, workplace, source, q):
+        if not _passes(job, discipline, workplace, source, q, skill):
             continue
         job_skills = index.skills[i]
         matched = job_skills & profile_skills

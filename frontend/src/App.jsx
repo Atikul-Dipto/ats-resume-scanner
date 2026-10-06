@@ -10,6 +10,7 @@ import BuilderPage from "./pages/BuilderPage.jsx";
 import HomePage from "./pages/HomePage.jsx";
 import JobDetailPage from "./pages/JobDetailPage.jsx";
 import JobsPage from "./pages/JobsPage.jsx";
+import MarketPage from "./pages/MarketPage.jsx";
 import ResumesPage from "./pages/ResumesPage.jsx";
 import ScanPage from "./pages/ScanPage.jsx";
 import { applyMode, getInitialMode } from "./theme.js";
@@ -42,6 +43,7 @@ export default function App() {
             <Route path="/builder/:id" element={<BuilderPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/jobs/:id" element={<JobDetailPage />} />
+            <Route path="/market" element={<MarketPage />} />
             <Route path="/resumes" element={<ResumesPage />} />
             <Route path="/admin/jobs" element={<AdminJobsPage />} />
             <Route path="/login" element={<AuthPage />} />
@@ -55,7 +57,7 @@ export default function App() {
           <Link to="/" className="navbar__brand"><Logo /></Link>
           <span>The career center for job seekers · Uploaded files are never stored</span>
           <span>
-            <Link to="/scan">Scan</Link> · <Link to="/builder">Builder</Link> · <Link to="/jobs">Jobs</Link>
+            <Link to="/scan">Scan</Link> · <Link to="/builder">Builder</Link> · <Link to="/jobs">Jobs</Link> · <Link to="/market">Work Signal</Link>
           </span>
         </div>
       </footer>

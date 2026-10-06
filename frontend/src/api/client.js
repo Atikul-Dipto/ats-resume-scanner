@@ -221,3 +221,8 @@ export const assistant = {
     }
   },
 };
+
+// Work Signal: market signals from the open-jobs catalog.
+export const market = (filters) => request(`/api/market${query(filters)}`);
+// Official Bangladesh labour statistics (World Bank WDI), cached server-side for a day.
+export const marketIndicators = () => request("/api/market/indicators");
