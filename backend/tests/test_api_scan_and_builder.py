@@ -52,6 +52,16 @@ def test_export_pdf_and_docx(client, sample_document):
     assert client.post("/api/builder/export/exe", json={"document": sample_document}).status_code == 422
 
 
+def test_export_latex_for_every_template(client, sample_document):
+    for template in ("classic", "compact", "jake", "moderncv", "awesome", "ivy"):
+        tex = client.post("/api/builder/export/tex", json={"document": {**sample_document, "template": template}})
+        assert tex.status_code == 200, template
+        assert tex.headers["content-type"].startswith("application/x-tex")
+        assert 'filename="Jane_Doe_Resume.tex"' in tex.headers["content-disposition"]
+        assert tex.text.startswith("% !TEX program = pdflatex")
+        assert r"\begin{document}" in tex.text and "Jane Doe" in tex.text
+
+
 # --- upload scan --------------------------------------------------------
 
 def test_analyze_pdf_returns_analysis_and_builder_draft(client, sample_document):

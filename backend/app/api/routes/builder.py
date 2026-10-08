@@ -21,6 +21,7 @@ router = APIRouter(prefix="/api/builder", tags=["builder"])
 MEDIA_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "tex": "application/x-tex; charset=utf-8",
 }
 RENDERERS = {"pdf": render_pdf, "docx": render_docx, "tex": render_latex}
 
