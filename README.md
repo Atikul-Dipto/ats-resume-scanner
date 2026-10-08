@@ -57,8 +57,14 @@ security controls, and decision log.
 - Structured editor for contact info, experience, education, skills, projects, certifications.
 - Live score while typing (debounced, ~6 ms server-side), with coaching shown under the exact
   bullet that's weak and one-click adds for keywords missing from the target job.
-- Export to single-column, text-based PDF or DOCX. The exported file scores the same as the
-  editor showed — verified in tests by exporting, re-parsing with the scanner, and comparing.
+- Six templates, including four modelled on popular LaTeX resumes (Jake's Resume, moderncv,
+  Awesome-CV, Harvard-style "Ivy"), all single-column and ATS-safe. Customize font, accent
+  colour, sizes, margins, spacing, heading style, date placement, paper size and section order.
+- A page-accurate preview: real A4/Letter pages in the same fonts as the PDF, with zoom,
+  margin guides, full-screen mode and an "Exact PDF" view of the server-rendered file.
+- Export to single-column, text-based PDF, DOCX or LaTeX source (or open it straight in
+  Overleaf). The exported file scores the same as the editor showed — verified in tests for
+  every template by exporting, re-parsing with the scanner, and comparing.
 - Anonymous drafts autosave in the browser; signed-in users get saved resumes with optimistic
   locking (two tabs can't silently overwrite each other) and per-resume score history.
 

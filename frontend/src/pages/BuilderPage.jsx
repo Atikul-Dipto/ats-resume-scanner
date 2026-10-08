@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { exportDocument, resumes } from "../api/client.js";
 import { useAuth } from "../auth/AuthContext.jsx";
+import DesignPanel from "../builder/DesignPanel.jsx";
 import ResumePreview from "../builder/ResumePreview.jsx";
 import ScorePanel from "../builder/ScorePanel.jsx";
 import {
@@ -10,9 +12,11 @@ import {
   EducationEditor,
   ExperienceEditor,
   ProjectsEditor,
+  SectionCard,
   SkillsEditor,
 } from "../builder/SectionEditors.jsx";
 import { clearDraft, downloadBlob, emptyDocument, loadDraft, saveDraft, withKeys } from "../builder/model.js";
+import { TEMPLATE_IDS, TEMPLATES, withTemplate } from "../builder/templates.js";
 import useLiveScore from "../builder/useLiveScore.js";
 import { useAssistant, useAssistantPage } from "../assistant/AssistantContext.jsx";
 
@@ -33,6 +37,7 @@ export default function BuilderPage() {
   const [imported, setImported] = useState(false);
   const [tab, setTab] = useState("score");
   const [exporting, setExporting] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
   // "Tailor my resume for this job" from the job board: load that posting as
   // the target job once the resume itself has loaded.
   const [tailorJob, setTailorJob] = useState(() => location.state?.tailorJob || null);
@@ -157,13 +162,62 @@ export default function BuilderPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [save]);
 
+  // Full-screen preview: Esc closes it, and the page behind doesn't scroll.
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const onKey = (e) => e.key === "Escape" && setFullscreen(false);
+    const overflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = overflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [fullscreen]);
+
+  const exportName = () => (doc.basics.name ? `${doc.basics.name} Resume` : title || "Resume");
+
   async function handleExport(format) {
     setExporting(format);
     try {
-      const name = doc.basics.name ? `${doc.basics.name} Resume` : title || "Resume";
+      const name = exportName();
       const blob = await exportDocument(doc, format, name);
       downloadBlob(blob, `${name.replace(/[^\w.-]+/g, "_")}.${format}`);
     } catch (err) {
+      setSaveState({ status: "error", message: err.message });
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  // Overleaf's "open a snippet" endpoint takes a form POST. The tab is opened
+  // first, inside the click, so popup blockers allow it.
+  async function openInOverleaf() {
+    const overleafTab = window.open("", "prottoy-overleaf");
+    setExporting("overleaf");
+    try {
+      const tex = await (await exportDocument(doc, "tex", exportName())).text();
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = "https://www.overleaf.com/docs";
+      form.target = "prottoy-overleaf";
+      const fields = {
+        encoded_snip: encodeURIComponent(tex),
+        snip_name: "resume.tex",
+        engine: tex.startsWith("% !TEX program = lualatex") ? "lualatex" : "pdflatex",
+      };
+      for (const [name, value] of Object.entries(fields)) {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+      form.remove();
+    } catch (err) {
+      overleafTab?.close();
       setSaveState({ status: "error", message: err.message });
     } finally {
       setExporting(null);
@@ -203,9 +257,10 @@ export default function BuilderPage() {
       <div className="builder-toolbar hud-panel">
         <input className="builder-title" type="text" aria-label="Resume name" value={title}
           onChange={(e) => setTitle(e.target.value)} maxLength={200} />
-        <select aria-label="Template" value={doc.template} onChange={(e) => update("template")(e.target.value)}>
-          <option value="classic">Classic template</option>
-          <option value="compact">Compact template</option>
+        <select aria-label="Template" value={doc.template} onChange={(e) => setDoc((d) => withTemplate(d, e.target.value))}>
+          {TEMPLATE_IDS.map((t) => (
+            <option key={t} value={t}>{TEMPLATES[t].label} template</option>
+          ))}
         </select>
         <span className={`save-status save-status--${saveState.status} ${dirty ? "is-dirty" : ""}`} role="status">
           {statusText}
@@ -229,10 +284,18 @@ export default function BuilderPage() {
           <button type="button" className="btn-ghost btn-small" onClick={() => handleExport("docx")} disabled={!!exporting}>
             {exporting === "docx" ? "Exporting…" : "↓ DOCX"}
           </button>
+          <button type="button" className="btn-ghost btn-small" onClick={() => handleExport("tex")} disabled={!!exporting}
+            title="LaTeX source of this template, ready to compile">
+            {exporting === "tex" ? "Exporting…" : "↓ LaTeX"}
+          </button>
+          <button type="button" className="btn-ghost btn-small" onClick={openInOverleaf} disabled={!!exporting}
+            title="Open the LaTeX source as a new Overleaf project (sends your resume to overleaf.com)">
+            {exporting === "overleaf" ? "Opening…" : "↗ Overleaf"}
+          </button>
         </div>
       </div>
 
-      <div className="builder-layout">
+      <div className={`builder-layout${tab === "preview" ? " builder-layout--preview" : ""}`}>
         <div className="builder-editor">
           {tailorJob && (
             <div className="notice notice--accent">
@@ -249,6 +312,10 @@ export default function BuilderPage() {
               <button type="button" className="icon-btn" onClick={() => setImported(false)} aria-label="Dismiss">✕</button>
             </div>
           )}
+          <SectionCard title={`Template & design · ${TEMPLATES[doc.template].label}`} icon="◧" defaultOpen={false}
+            className="editor-card--design" onToggle={(open) => open && setTab("preview")}>
+            <DesignPanel document={doc} onChange={setDoc} />
+          </SectionCard>
           <BasicsEditor basics={doc.basics} onChange={update("basics")} />
           <ExperienceEditor items={doc.experience} onChange={update("experience")} flaggedLines={flagged} />
           <SkillsEditor groups={doc.skills} onChange={update("skills")} missingKeywords={jd.trim() ? score?.keywords.missing : null} />
@@ -270,11 +337,25 @@ export default function BuilderPage() {
             {tab === "score" ? (
               <ScorePanel score={score} pending={pending} error={scoreError} jobDescription={jd} onJobDescriptionChange={setJd} />
             ) : (
-              <ResumePreview document={doc} />
+              <ResumePreview document={doc} onExpand={() => setFullscreen(true)} />
             )}
           </div>
         </aside>
       </div>
+
+      {/* Portalled: .builder's entry animation transforms it, which would trap position: fixed. */}
+      {fullscreen && createPortal(
+        <div className="preview-modal" role="dialog" aria-modal="true" aria-label="Full-screen resume preview">
+          <aside className="preview-modal__design">
+            <h2>Template &amp; design</h2>
+            <DesignPanel document={doc} onChange={setDoc} />
+          </aside>
+          <div className="preview-modal__stage">
+            <ResumePreview document={doc} expanded onExpand={() => setFullscreen(false)} />
+          </div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }

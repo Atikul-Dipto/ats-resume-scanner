@@ -9,6 +9,7 @@ from fastapi.responses import Response
 
 from app.analysis.pipeline import analyze_document
 from app.builder.export_docx import render_docx
+from app.builder.export_latex import render_latex
 from app.builder.export_pdf import render_pdf
 from app.core.executor import run_cpu_bound
 from app.core.rate_limit import rate_limit
@@ -21,7 +22,7 @@ MEDIA_TYPES = {
     "pdf": "application/pdf",
     "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 }
-RENDERERS = {"pdf": render_pdf, "docx": render_docx}
+RENDERERS = {"pdf": render_pdf, "docx": render_docx, "tex": render_latex}
 
 
 def safe_filename(name: str) -> str:
@@ -35,7 +36,7 @@ async def score_document(body: BuilderScoreRequest):
 
 
 @router.post("/export/{fmt}", dependencies=[Depends(rate_limit("export"))])
-async def export_document(fmt: Literal["pdf", "docx"], body: ExportRequest) -> Response:
+async def export_document(fmt: Literal["pdf", "docx", "tex"], body: ExportRequest) -> Response:
     data = await run_cpu_bound(RENDERERS[fmt], body.document)
     name = safe_filename(body.filename or f"{body.document.basics.name} Resume")
     return Response(

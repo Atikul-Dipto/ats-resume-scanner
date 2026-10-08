@@ -102,6 +102,7 @@ flowchart TB
       L --> TXT[render_text]
       L --> PDF[render_pdf]
       L --> DOCX[render_docx]
+      L --> TEX[render_latex]
       D --> CHK[check_document<br/>structural checks]
     end
     subgraph Scanner
@@ -130,6 +131,33 @@ flowchart TB
 - `test_export_then_import_roundtrip_is_lossless` closes the loop:
   builder → PDF → scanner → importer reproduces the original document.
 
+### Templates and design
+
+- Six templates live in `builder/templates.json`: Classic and Compact, plus
+  four modelled on well-known LaTeX resumes (Jake's Resume, moderncv,
+  Awesome-CV, and the Harvard career-office format as "Ivy"). The frontend
+  imports the same JSON (`frontend/src/builder/templates.js`), so the preview
+  and the exporters read identical numbers.
+- A resume stores `template` plus a `style` of optional overrides (font,
+  accent, sizes, margins, spacing, heading style/case/alignment, date
+  placement, paper, section order). `templates.resolve_style()` merges them;
+  unset fields follow the template, so switching templates restyles everything
+  the user didn't deliberately change.
+- Every option is typography inside the one ATS-safe layout. Anything that
+  changes the *extracted text* (letter case, section order, dates beside or
+  below a role) is decided in `build_blocks()`, never in a renderer, so the
+  parity tests above run for every template in both PDF and DOCX.
+- Fonts (Latin Modern, Source Sans 3) are bundled in `builder/fonts/` and
+  embedded without ligatures. The browser preview loads the same files and
+  mirrors the PDF geometry in physical units (`resume-paper.css`), then
+  paginates by measuring blocks; "Exact PDF" shows the server's real file.
+- `render_latex()` emits a standalone `.tex` (and "Open in Overleaf") with the
+  usual LaTeX ATS failure modes removed: `\pdfgentounicode`, real interword
+  spaces, ligatures off, `\hfill` rows instead of `tabular`, no
+  headers/footers. It switches to LuaLaTeX with a DejaVu fallback when the
+  text needs scripts pdfLaTeX can't set. When `pdflatex` is on the PATH, the
+  tests compile every template and run the scanner on the result.
+
 ---
 
 ## 5. Request flows
@@ -151,7 +179,7 @@ The frontend debounces edits by 700 ms and aborts any in-flight request
 (`useLiveScore.js`). The server is stateless: the document travels in the
 body, so anonymous users get the same feature. Cost is about 6 ms per call.
 
-**Export (`POST /api/builder/export/{pdf|docx}`)**
+**Export (`POST /api/builder/export/{pdf|docx|tex}`)**
 
 Stateless. The filename is sanitized server-side.
 
@@ -387,8 +415,8 @@ and safer than any bucket policy.
 
 ### Known hot spot
 
-PDF export re-parses the DejaVu TTF on every call; most of the 160 ms is
-font loading. If export volume grows, cache the parsed font, or pre-render the
+PDF export re-parses the template's bundled fonts (and DejaVu, only when a
+character needs it) on every call; most of the 100–150 ms is font loading. If export volume grows, cache the parsed font, or pre-render the
 static parts of each template.
 
 ---
