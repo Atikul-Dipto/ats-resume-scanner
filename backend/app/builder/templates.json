@@ -1,0 +1,160 @@
+{
+  "fonts": {
+    "lmroman": {
+      "label": "LaTeX Serif",
+      "detail": "Latin Modern Roman: the Computer Modern face of a LaTeX document",
+      "docx": "Cambria"
+    },
+    "lmsans": {
+      "label": "LaTeX Sans",
+      "detail": "Latin Modern Sans: moderncv's default face",
+      "docx": "Calibri"
+    },
+    "sourcesans": {
+      "label": "Modern Sans",
+      "detail": "Source Sans 3: Awesome-CV's body face",
+      "docx": "Calibri"
+    }
+  },
+  "sections": ["summary", "experience", "education", "skills", "projects", "certifications"],
+  "section_titles": {
+    "summary": "Summary",
+    "experience": "Experience",
+    "education": "Education",
+    "skills": "Skills",
+    "projects": "Projects",
+    "certifications": "Certifications"
+  },
+  "paper": {
+    "a4": [210, 297],
+    "letter": [215.9, 279.4]
+  },
+  "templates": {
+    "classic": {
+      "label": "Classic",
+      "inspired_by": "",
+      "tagline": "Clean sans-serif with dates under each role. The safest all-rounder.",
+      "style": {
+        "font": "sourcesans",
+        "font_size": 10.5,
+        "name_size": 21,
+        "margin": 18,
+        "line_height": 1.45,
+        "accent": "#1F2937",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "below",
+        "paper": "a4",
+        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
+      }
+    },
+    "compact": {
+      "label": "Compact",
+      "inspired_by": "",
+      "tagline": "Tighter spacing and right-aligned dates to fit more on one page.",
+      "style": {
+        "font": "sourcesans",
+        "font_size": 9.5,
+        "name_size": 18,
+        "margin": 13,
+        "line_height": 1.3,
+        "accent": "#111827",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": ["summary", "experience", "skills", "education", "projects", "certifications"]
+      }
+    },
+    "jake": {
+      "label": "Jake's Resume",
+      "inspired_by": "Jake Gutierrez's LaTeX resume (after sb2nov)",
+      "tagline": "The most-forked LaTeX resume: Computer Modern serif, centered header, small-caps headings.",
+      "style": {
+        "font": "lmroman",
+        "font_size": 10.5,
+        "name_size": 24,
+        "margin": 14,
+        "line_height": 1.3,
+        "accent": "#000000",
+        "header_align": "center",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "smallcaps",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": ["summary", "education", "experience", "projects", "skills", "certifications"]
+      }
+    },
+    "moderncv": {
+      "label": "ModernCV",
+      "inspired_by": "Xavier Danaux's moderncv class (classic style)",
+      "tagline": "Latin Modern Sans with colored headings and a trailing rule.",
+      "style": {
+        "font": "lmsans",
+        "font_size": 10.5,
+        "name_size": 26,
+        "margin": 18,
+        "line_height": 1.4,
+        "accent": "#3873B3",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "line",
+        "heading_case": "normal",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
+      }
+    },
+    "awesome": {
+      "label": "Awesome CV",
+      "inspired_by": "posquit0's Awesome-CV",
+      "tagline": "Bold modern sans, centered header and accent-colored headings.",
+      "style": {
+        "font": "sourcesans",
+        "font_size": 10,
+        "name_size": 26,
+        "margin": 15,
+        "line_height": 1.4,
+        "accent": "#DC3522",
+        "header_align": "center",
+        "name_case": "normal",
+        "heading_style": "line",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
+      }
+    },
+    "ivy": {
+      "label": "Ivy",
+      "inspired_by": "the Harvard career-office format",
+      "tagline": "Traditional serif with centered headings: the finance and consulting look.",
+      "style": {
+        "font": "lmroman",
+        "font_size": 11,
+        "name_size": 20,
+        "margin": 20,
+        "line_height": 1.35,
+        "accent": "#000000",
+        "header_align": "center",
+        "name_case": "upper",
+        "heading_style": "rule",
+        "heading_case": "upper",
+        "heading_align": "center",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": ["summary", "education", "experience", "skills", "projects", "certifications"]
+      }
+    }
+  }
+}

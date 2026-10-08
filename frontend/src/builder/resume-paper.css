@@ -1,0 +1,233 @@
+/* The resume "paper": a physical-units mirror of backend/app/builder/export_pdf.py.
+   Sizes are in pt and gaps in mm, using the same font files the PDF embeds,
+   so line breaks, alignment and page breaks match the download. If you change
+   a number in export_pdf.py, change it here too. Per-resume values arrive as
+   custom properties from ResumePreview.jsx (see paperVars()). */
+
+@font-face { font-family: "Resume LM Roman"; src: url("./fonts/lmroman10-regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume LM Roman"; src: url("./fonts/lmroman10-bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume LM Roman"; src: url("./fonts/lmroman10-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume LM Roman"; src: url("./fonts/lmroman10-bolditalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume LM Sans"; src: url("./fonts/lmsans10-regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume LM Sans"; src: url("./fonts/lmsans10-bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume LM Sans"; src: url("./fonts/lmsans10-oblique.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume LM Sans"; src: url("./fonts/lmsans10-boldoblique.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-It.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-BoldIt.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+
+.rp-page {
+  --rp-text: #1f2937;
+  --rp-strong: #111827;
+  --rp-muted: #4b5563;
+  position: relative;
+  box-sizing: border-box;
+  width: var(--rp-page-w);
+  height: var(--rp-page-h);
+  padding: var(--rp-margin);
+  background: #fff;
+  color: var(--rp-text);
+  font-family: var(--rp-font);
+  font-size: calc(var(--rp-fs) * 1pt);
+  line-height: calc(var(--rp-fs) * var(--rp-lh) * 1pt);
+  font-kerning: none; /* fpdf2 doesn't kern; keep line breaks identical */
+  font-variant-ligatures: none;
+  overflow: hidden;
+  text-align: left;
+  letter-spacing: 0;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.25), 0 12px 32px rgba(15, 23, 42, 0.28);
+}
+
+.rp-page--auto {
+  height: auto;
+  min-height: var(--rp-page-h);
+}
+
+.rp-page * {
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  letter-spacing: 0;
+  text-shadow: none;
+  text-transform: none;
+}
+
+.rp-block {
+  display: flow-root; /* contain margins so blocks measure and paginate as units */
+}
+
+.rp-name {
+  font-size: calc(var(--rp-ns) * 1pt);
+  line-height: calc(var(--rp-ns) * 1.2pt);
+  font-weight: 700;
+  color: var(--rp-accent);
+  text-align: var(--rp-header-align);
+  margin-bottom: 0.6mm;
+  overflow-wrap: anywhere;
+}
+
+.rp-headline {
+  font-size: calc((var(--rp-fs) + 1.5) * 1pt);
+  line-height: calc((var(--rp-fs) + 1.5) * var(--rp-lh) * 1pt);
+  text-align: var(--rp-header-align);
+  margin-bottom: 0.4mm;
+}
+
+.rp-contact {
+  font-size: calc((var(--rp-fs) - 0.5) * 1pt);
+  color: var(--rp-muted);
+  text-align: var(--rp-header-align);
+  overflow-wrap: anywhere;
+}
+
+/* Headings: size fs × 1.15, line box × 1.25, gap above 0.75 lines. */
+.rp-heading {
+  --rp-hs: calc(var(--rp-fs) * 1.15);
+  margin-top: calc(var(--rp-fs) * var(--rp-lh) * 0.75pt);
+  font-size: calc(var(--rp-hs) * 1pt);
+  line-height: calc(var(--rp-hs) * 1.25pt);
+  font-weight: 700;
+  color: var(--rp-accent);
+  white-space: nowrap;
+}
+
+.rp-block.is-page-top .rp-heading {
+  margin-top: 0;
+}
+
+.rp-heading--center {
+  text-align: center;
+}
+
+.rp-heading--rule {
+  border-bottom: 0.3mm solid var(--rp-rule);
+  padding-bottom: 0.15mm;
+  margin-bottom: 1.35mm;
+}
+
+.rp-heading--plain {
+  margin-bottom: 1.2mm;
+}
+
+.rp-heading--line {
+  display: flex;
+  align-items: center;
+  gap: 2.5mm;
+  margin-bottom: 1.2mm;
+}
+
+.rp-heading--line::after,
+.rp-heading--line.rp-heading--center::before {
+  content: "";
+  flex: 1;
+  border-top: 0.4mm solid var(--rp-rule);
+  transform: translateY(0.25mm);
+}
+
+.rp-sc {
+  font-size: calc(var(--rp-hs) * 0.8pt);
+}
+
+.rp-entry {
+  display: flex;
+  align-items: baseline;
+  gap: 3mm;
+}
+
+.rp-entry-gap {
+  margin-top: 1.2mm;
+}
+
+.rp-entry__title {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--rp-strong);
+  overflow-wrap: anywhere;
+}
+
+.rp-entry__aside {
+  flex-shrink: 0;
+  font-style: italic;
+  color: var(--rp-muted);
+  white-space: nowrap;
+}
+
+.rp-meta {
+  font-size: calc((var(--rp-fs) - 0.5) * 1pt);
+  font-style: italic;
+  color: var(--rp-muted);
+}
+
+.rp-bullet {
+  position: relative;
+  padding-left: 4.5mm;
+}
+
+.rp-bullet::before {
+  content: "•";
+  position: absolute;
+  left: 1mm;
+}
+
+.rp-skill-label {
+  font-weight: 700;
+}
+
+.rp-line,
+.rp-bullet,
+.rp-skill {
+  overflow-wrap: anywhere;
+}
+
+/* --- guides: the PDF's real margins and centre line --- */
+.rp-guides {
+  position: absolute;
+  inset: var(--rp-margin);
+  pointer-events: none;
+  outline: 1px dashed rgba(14, 165, 233, 0.75);
+}
+
+.rp-guides::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  border-left: 1px dashed rgba(236, 72, 153, 0.6);
+}
+
+.rp-page-label {
+  position: absolute;
+  right: 3mm;
+  bottom: 2.5mm;
+  font-family: system-ui, sans-serif;
+  font-size: 7pt;
+  line-height: 1;
+  color: #94a3b8;
+}
+
+.rp-overflow {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 6mm;
+  background: linear-gradient(transparent, rgba(255, 255, 255, 0.95));
+}
+
+/* Hidden copy of the content column used to measure blocks for pagination. */
+.rp-measure {
+  position: absolute;
+  left: -100000px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.rp-measure .rp-page {
+  height: auto;
+  box-shadow: none;
+}

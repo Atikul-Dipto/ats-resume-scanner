@@ -1,6 +1,7 @@
 // Client-side helpers for the ResumeDocument shape defined in
 // backend/app/schemas/resume.py. The backend is the source of truth for
 // validation and scoring; this file only builds, edits and previews it.
+import { SECTION_TITLES, resolveStyle } from "./templates.js";
 
 const DRAFT_KEY = "ats-builder-draft-v1";
 
@@ -18,6 +19,7 @@ export function emptyDocument() {
   return {
     schema_version: 1,
     template: "classic",
+    style: {}, // overrides on top of the template; empty = the template as designed
     basics: { name: "", headline: "", email: "", phone: "", location: "", links: [], summary: "" },
     experience: [emptyExperience()],
     education: [emptyEducation()],
@@ -32,7 +34,7 @@ const LIST_KEYS = ["experience", "education", "skills", "projects", "certificati
 // The API strips unknown fields, so React keys are re-attached on every load.
 export function withKeys(doc) {
   const base = emptyDocument();
-  const out = { ...base, ...doc, basics: { ...base.basics, ...(doc?.basics || {}) } };
+  const out = { ...base, ...doc, basics: { ...base.basics, ...(doc?.basics || {}) }, style: { ...(doc?.style || {}) } };
   out.basics.links = (out.basics.links || []).map((l) => ({ ...l, _key: l._key || newKey() }));
   for (const key of LIST_KEYS) {
     out[key] = (doc?.[key] || []).map((item) => ({ ...item, _key: item._key || newKey() }));
@@ -110,64 +112,73 @@ export function formatRange(start, end, current = false) {
 }
 
 const join = (parts, sep = " | ") => parts.filter(Boolean).join(sep);
+const block = (kind, text, extra) => ({ kind, text, aside: "", label: "", parts: [], ...extra });
 
-export function buildBlocks(doc) {
+function entry(blocks, title, dates, location, style) {
+  if (style.date_position === "right") {
+    blocks.push(block("entry_title", title, { aside: dates }));
+    if (location) blocks.push(block("entry_meta", location));
+  } else {
+    blocks.push(block("entry_title", title));
+    const meta = join([dates, location]);
+    if (meta) blocks.push(block("entry_meta", meta));
+  }
+}
+
+const SECTION_BUILDERS = {
+  summary: (doc) => (doc.basics.summary || "").split("\n").filter((p) => p.trim()).map((p) => block("line", p)),
+  experience: (doc, style) => {
+    const out = [];
+    for (const e of doc.experience.filter((e) => e.title || e.company || e.bullets.some(Boolean))) {
+      entry(out, join([e.title, e.company], ", "), formatRange(e.start, e.end, e.current), e.location, style);
+      e.bullets.filter(Boolean).forEach((t) => out.push(block("bullet", t)));
+    }
+    return out;
+  },
+  education: (doc, style) => {
+    const out = [];
+    for (const e of doc.education.filter((e) => e.institution || e.degree)) {
+      entry(out, join([e.degree, e.institution], ", "), formatRange(e.start, e.end), e.location, style);
+      e.details.filter(Boolean).forEach((t) => out.push(block("line", t)));
+    }
+    return out;
+  },
+  skills: (doc) =>
+    doc.skills
+      .filter((g) => g.skills.some(Boolean))
+      .map((g) => {
+        const listed = g.skills.filter(Boolean).join(", ");
+        return g.name ? block("skill", `${g.name}: ${listed}`, { label: g.name }) : block("line", listed);
+      }),
+  projects: (doc) => {
+    const out = [];
+    for (const p of doc.projects.filter((p) => p.name || p.bullets.some(Boolean))) {
+      out.push(block("entry_title", join([p.name, p.url])));
+      p.bullets.filter(Boolean).forEach((t) => out.push(block("bullet", t)));
+    }
+    return out;
+  },
+  certifications: (doc) =>
+    doc.certifications.filter((c) => c.name).map((c) => block("line", join([c.name, c.issuer, formatDate(c.date)]))),
+};
+
+export function headingText(key, style) {
+  const title = SECTION_TITLES[key];
+  return style.heading_case === "normal" ? title : title.toUpperCase();
+}
+
+// Blocks are { kind, text, aside, label, parts }, as in layout.py's Block.
+export function buildBlocks(doc, style = resolveStyle(doc)) {
   const blocks = [];
   const b = doc.basics;
-  if (b.name) blocks.push(["name", b.name]);
-  if (b.headline) blocks.push(["headline", b.headline]);
-  const contact = join([b.email, b.phone, b.location, ...b.links.map((l) => l.url)]);
-  if (contact) blocks.push(["contact", contact]);
+  if (b.name) blocks.push(block("name", style.name_case === "upper" ? b.name.toUpperCase() : b.name));
+  if (b.headline) blocks.push(block("headline", b.headline));
+  const parts = [b.email, b.phone, b.location, ...b.links.map((l) => l.url)].filter(Boolean);
+  if (parts.length) blocks.push(block("contact", parts.join(" | "), { parts }));
 
-  if (b.summary?.trim()) {
-    blocks.push(["heading", "Summary"]);
-    b.summary.split("\n").filter((p) => p.trim()).forEach((p) => blocks.push(["line", p]));
-  }
-
-  const exp = doc.experience.filter((e) => e.title || e.company || e.bullets.some(Boolean));
-  if (exp.length) {
-    blocks.push(["heading", "Experience"]);
-    for (const e of exp) {
-      blocks.push(["entry_title", join([e.title, e.company], ", ")]);
-      const meta = join([formatRange(e.start, e.end, e.current), e.location]);
-      if (meta) blocks.push(["entry_meta", meta]);
-      e.bullets.filter(Boolean).forEach((t) => blocks.push(["bullet", t]));
-    }
-  }
-
-  const edu = doc.education.filter((e) => e.institution || e.degree);
-  if (edu.length) {
-    blocks.push(["heading", "Education"]);
-    for (const e of edu) {
-      blocks.push(["entry_title", join([e.degree, e.institution], ", ")]);
-      const meta = join([formatRange(e.start, e.end), e.location]);
-      if (meta) blocks.push(["entry_meta", meta]);
-      e.details.filter(Boolean).forEach((t) => blocks.push(["line", t]));
-    }
-  }
-
-  const groups = doc.skills.filter((g) => g.skills.some(Boolean));
-  if (groups.length) {
-    blocks.push(["heading", "Skills"]);
-    for (const g of groups) {
-      const listed = g.skills.filter(Boolean).join(", ");
-      blocks.push(["line", g.name ? `${g.name}: ${listed}` : listed]);
-    }
-  }
-
-  const projects = doc.projects.filter((p) => p.name || p.bullets.some(Boolean));
-  if (projects.length) {
-    blocks.push(["heading", "Projects"]);
-    for (const p of projects) {
-      blocks.push(["entry_title", join([p.name, p.url])]);
-      p.bullets.filter(Boolean).forEach((t) => blocks.push(["bullet", t]));
-    }
-  }
-
-  const certs = doc.certifications.filter((c) => c.name);
-  if (certs.length) {
-    blocks.push(["heading", "Certifications"]);
-    certs.forEach((c) => blocks.push(["line", join([c.name, c.issuer, formatDate(c.date)])]));
+  for (const key of style.section_order) {
+    const body = SECTION_BUILDERS[key](doc, style);
+    if (body.length) blocks.push(block("heading", headingText(key, style)), ...body);
   }
   return blocks;
 }

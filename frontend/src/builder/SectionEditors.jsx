@@ -10,12 +10,16 @@ import {
   moveItem,
 } from "./model.js";
 
-function SectionCard({ title, icon, count, children, defaultOpen = true, action }) {
+export function SectionCard({ title, icon, count, children, defaultOpen = true, action, onToggle, className = "" }) {
   const [open, setOpen] = useState(defaultOpen);
+  const toggle = () => {
+    setOpen(!open);
+    onToggle?.(!open);
+  };
   return (
-    <section className={`editor-card ${open ? "is-open" : ""}`}>
+    <section className={`editor-card ${open ? "is-open" : ""} ${className}`}>
       <header className="editor-card__head">
-        <button type="button" className="editor-card__toggle" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
+        <button type="button" className="editor-card__toggle" onClick={toggle} aria-expanded={open}>
           <span className="section-icon">{icon}</span>
           {title}
           {count != null && <span className="editor-card__count">{count}</span>}

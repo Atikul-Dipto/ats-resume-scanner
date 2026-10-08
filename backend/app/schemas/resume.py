@@ -91,9 +91,36 @@ class CertificationItem(_Strict):
         return value
 
 
+TemplateId = Literal["classic", "compact", "jake", "moderncv", "awesome", "ivy"]
+SectionKey = Literal["summary", "experience", "education", "skills", "projects", "certifications"]
+HexColor = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^#[0-9A-Fa-f]{6}$")]
+
+
+class ResumeStyle(_Strict):
+    """Design overrides on top of the chosen template. None = the template's
+    own value (see builder/templates.json), so switching templates restyles
+    everything the user hasn't explicitly changed."""
+
+    font: Literal["lmroman", "lmsans", "sourcesans"] | None = None
+    font_size: Annotated[float, Field(ge=8.5, le=12.5)] | None = None
+    name_size: Annotated[float, Field(ge=14, le=32)] | None = None
+    margin: Annotated[float, Field(ge=8, le=30)] | None = None
+    line_height: Annotated[float, Field(ge=1.1, le=1.8)] | None = None
+    accent: HexColor | None = None
+    header_align: Literal["left", "center"] | None = None
+    name_case: Literal["normal", "upper"] | None = None
+    heading_style: Literal["rule", "line", "plain"] | None = None
+    heading_case: Literal["upper", "smallcaps", "normal"] | None = None
+    heading_align: Literal["left", "center"] | None = None
+    date_position: Literal["right", "below"] | None = None
+    paper: Literal["a4", "letter"] | None = None
+    section_order: Annotated[list[SectionKey], Field(max_length=12)] | None = None
+
+
 class ResumeDocument(_Strict):
     schema_version: int = SCHEMA_VERSION
-    template: Literal["classic", "compact"] = "classic"
+    template: TemplateId = "classic"
+    style: ResumeStyle = Field(default_factory=ResumeStyle)
     basics: Basics = Field(default_factory=Basics)
     experience: Annotated[list[ExperienceItem], Field(default_factory=list, max_length=20)]
     education: Annotated[list[EducationItem], Field(default_factory=list, max_length=10)]

@@ -1,16 +1,24 @@
+import shutil
+import subprocess
+from typing import get_args
+
 import pytest
 from pydantic import ValidationError
 
 from app.analysis.pipeline import analyze_document, analyze_parsed
 from app.builder.checks import check_document
 from app.builder.export_docx import render_docx
+from app.builder.export_latex import escape, render_latex
 from app.builder.export_pdf import render_pdf
 from app.builder.importer import document_from_text
-from app.builder.layout import format_date, format_range, render_text
+from app.builder.layout import build_blocks, format_date, format_range, render_text
+from app.builder.templates import SECTION_KEYS, TEMPLATES, resolve_style
 from app.parsers.docx_parser import parse_docx
 from app.parsers.pdf_parser import parse_pdf
-from app.schemas.resume import ResumeDocument
+from app.schemas.resume import ResumeDocument, ResumeStyle, TemplateId
 from tests.test_analysis import SAMPLE_RESUME
+
+TEMPLATE_IDS = list(get_args(TemplateId))
 
 
 def test_date_formatting():
@@ -42,9 +50,10 @@ def test_render_text_uses_standard_headings_and_bullets(sample_document):
     assert "PROJECTS" not in text  # empty sections are omitted
 
 
+@pytest.mark.parametrize("template", TEMPLATE_IDS)
 @pytest.mark.parametrize("render,parse", [(render_pdf, parse_pdf), (render_docx, parse_docx)])
-def test_exported_files_are_ats_clean_and_score_like_the_editor(sample_document, render, parse):
-    doc = ResumeDocument.model_validate(sample_document)
+def test_exported_files_are_ats_clean_and_score_like_the_editor(sample_document, render, parse, template):
+    doc = ResumeDocument.model_validate({**sample_document, "template": template})
     editor = analyze_document(doc, None)
     parsed = parse(render(doc))
     exported = analyze_parsed(parsed, None)
@@ -64,12 +73,26 @@ def test_pdf_export_handles_non_latin_text(sample_document):
     assert "Zoë Łukasiewicz-Müller" in parse_pdf(pdf)["text"]
 
 
-def test_pdf_export_falls_back_to_core_fonts_without_dejavu(sample_document, monkeypatch):
-    monkeypatch.setattr("app.builder.export_pdf.FONT_SEARCH_DIRS", [])
+def test_pdf_export_needs_no_system_fonts(sample_document, monkeypatch):
     monkeypatch.setattr("app.builder.export_pdf._find_font_dir", lambda: None)
+    sample_document["basics"]["name"] = "Zoë Łukasiewicz-Müller"
+    for template in TEMPLATE_IDS:
+        pdf = render_pdf(ResumeDocument.model_validate({**sample_document, "template": template}))
+        # Bundled fonts cover Latin Extended (Ivy prints names in capitals).
+        assert "zoë łukasiewicz-müller" in parse_pdf(pdf)["text"].lower()
+
+
+def test_pdf_export_falls_back_to_core_fonts_without_bundled_fonts(sample_document, monkeypatch, tmp_path):
+    monkeypatch.setattr("app.builder.export_pdf.BUNDLED_FONT_DIR", tmp_path)
     sample_document["basics"]["name"] = "Zoë Łukasiewicz"
     text = parse_pdf(render_pdf(ResumeDocument.model_validate(sample_document)))["text"]
     assert "Zoë" in text  # Latin-1 survives; characters outside it degrade, never crash
+
+
+def test_latex_fonts_have_no_ligatures_in_extracted_text(sample_document):
+    sample_document["experience"][0]["bullets"][0] = "Streamlined office workflows efficiently and affordably."
+    doc = ResumeDocument.model_validate({**sample_document, "template": "jake"})
+    assert "Streamlined office workflows efficiently and affordably." in parse_pdf(render_pdf(doc))["text"]
 
 
 def test_compact_template_fits_more_per_page(sample_document):
@@ -140,3 +163,134 @@ def test_importer_never_produces_an_invalid_document():
     doc = document_from_text(junk)
     ResumeDocument.model_validate(doc.model_dump())
     assert len(doc.experience[0].bullets) <= 15
+
+
+# --- templates & design ----------------------------------------------------
+
+
+def test_template_presets_match_the_schema():
+    assert set(TEMPLATES) == set(TEMPLATE_IDS)
+    for template_id in TEMPLATES:
+        # Every preset is a complete, valid style.
+        ResumeStyle.model_validate(TEMPLATES[template_id]["style"])
+        resolve_style(ResumeDocument(template=template_id))
+
+
+@pytest.mark.parametrize("template", TEMPLATE_IDS)
+def test_export_then_import_roundtrip_holds_for_every_template(sample_document, template):
+    original = ResumeDocument.model_validate({**sample_document, "template": template})
+    imported = document_from_text(parse_pdf(render_pdf(original))["text"])
+
+    assert imported.basics.name.lower() == original.basics.name.lower()  # Ivy prints names in capitals
+    assert imported.basics.email == original.basics.email
+    assert [e.model_dump() for e in imported.experience] == [e.model_dump() for e in original.experience]
+    assert [e.model_dump() for e in imported.education] == [e.model_dump() for e in original.education]
+    assert imported.skills == original.skills
+
+
+def test_style_overrides_beat_the_template_and_unset_fields_inherit_it():
+    doc = ResumeDocument(template="jake", style={"accent": "#0A66C2", "date_position": "below"})
+    style = resolve_style(doc)
+    assert style.accent == "#0A66C2"
+    assert style.date_position == "below"
+    assert style.font == TEMPLATES["jake"]["style"]["font"]
+
+
+@pytest.mark.parametrize("bad", [
+    {"accent": "red"},
+    {"accent": "#12345"},
+    {"font_size": 30},
+    {"margin": 2},
+    {"font": "comic-sans"},
+    {"section_order": ["experience", "hobbies"]},
+])
+def test_style_rejects_invalid_values(bad):
+    with pytest.raises(ValidationError):
+        ResumeDocument.model_validate({"style": bad})
+
+
+def test_section_order_is_normalized_and_drives_the_text(sample_document):
+    sample_document["style"] = {"section_order": ["skills", "skills", "education"]}
+    doc = ResumeDocument.model_validate(sample_document)
+    assert resolve_style(doc).section_order[:3] == ("skills", "education", "summary")
+    assert set(resolve_style(doc).section_order) == set(SECTION_KEYS)
+    text = render_text(doc)
+    assert text.index("SKILLS") < text.index("EDUCATION") < text.index("SUMMARY") < text.index("EXPERIENCE")
+
+
+def test_right_aligned_dates_share_the_role_line(sample_document):
+    doc = ResumeDocument.model_validate({**sample_document, "style": {"date_position": "right"}})
+    blocks = build_blocks(doc)
+    role = next(b for b in blocks if b.kind == "entry_title")
+    assert (role.text, role.aside) == ("Data Analyst, Acme Corp", "Jan 2020 – Present")
+    assert "Data Analyst, Acme Corp Jan 2020 – Present\nDhaka\n" in render_text(doc)
+
+
+def test_heading_and_name_case_are_part_of_the_scored_text(sample_document):
+    sample_document["style"] = {"heading_case": "normal", "name_case": "upper"}
+    text = render_text(ResumeDocument.model_validate(sample_document))
+    assert text.startswith("JANE DOE\n")
+    assert "\nExperience\n" in text
+
+
+def test_skill_groups_carry_their_label_for_bold_rendering(sample_document):
+    blocks = build_blocks(ResumeDocument.model_validate(sample_document))
+    skill = next(b for b in blocks if b.kind == "skill")
+    assert (skill.label, skill.text) == ("Languages", "Languages: Python, SQL")
+
+
+@pytest.mark.parametrize("paper,width_pt", [("a4", 595.28), ("letter", 612.0)])
+def test_paper_size_option(sample_document, paper, width_pt):
+    import io
+
+    import pdfplumber
+
+    doc = ResumeDocument.model_validate({**sample_document, "style": {"paper": paper}})
+    with pdfplumber.open(io.BytesIO(render_pdf(doc))) as pdf:
+        assert pdf.pages[0].width == pytest.approx(width_pt, abs=0.5)
+
+
+# --- LaTeX source export ------------------------------------------------------
+
+
+def test_latex_escapes_every_special_character():
+    assert escape(r"R&D 40% $5 #1 a_b {x} ~ ^ \ <|>") == (
+        r"R\&D 40\% \$5 \#1 a\_b \{x\} \textasciitilde{} \textasciicircum{} \textbackslash{} "
+        r"\textless{}\textbar{}\textgreater{}"
+    )
+
+
+@pytest.mark.parametrize("template", TEMPLATE_IDS)
+def test_latex_source_is_ats_hardened(sample_document, template):
+    tex = render_latex(ResumeDocument.model_validate({**sample_document, "template": template})).decode()
+    assert tex.startswith("% !TEX program = pdflatex")
+    for required in (r"\pdfgentounicode=1", r"\pdfinterwordspaceon", r"\DisableLigatures", r"\pagestyle{empty}"):
+        assert required in tex
+    for forbidden in (r"\begin{tabular", r"\fancyhead", r"\includegraphics", r"\begin{multicols"):
+        assert forbidden not in tex
+    assert r"\href{mailto:jane@example.com}{jane@example.com}" in tex
+    assert r"\href{https://linkedin.com/in/janedoe}{linkedin.com/in/janedoe}" in tex
+
+
+def test_latex_switches_to_lualatex_for_scripts_pdflatex_cannot_set(sample_document):
+    sample_document["basics"]["name"] = "Пётр Иванов"
+    tex = render_latex(ResumeDocument.model_validate(sample_document)).decode()
+    assert tex.startswith("% !TEX program = lualatex")
+
+
+@pytest.mark.skipif(shutil.which("pdflatex") is None, reason="needs a TeX installation")
+@pytest.mark.parametrize("template", TEMPLATE_IDS)
+def test_latex_source_compiles_to_an_ats_clean_pdf(sample_document, template, tmp_path):
+    doc = ResumeDocument.model_validate({**sample_document, "template": template})
+    (tmp_path / "resume.tex").write_bytes(render_latex(doc))
+    result = subprocess.run(
+        ["pdflatex", "-interaction=nonstopmode", "-halt-on-error", "resume.tex"],
+        cwd=tmp_path, capture_output=True, timeout=180,
+    )
+    assert result.returncode == 0, result.stdout.decode(errors="replace")[-2000:]
+    exported = analyze_parsed(parse_pdf((tmp_path / "resume.pdf").read_bytes()), None)
+    editor = analyze_document(doc, None)
+    assert exported["formatting_issues"] == []
+    assert all(section["found"] for section in exported["sections"])
+    assert exported["content_score"] == editor["content_score"]
+    assert exported["keyword_score"] == editor["keyword_score"]
