@@ -20,7 +20,7 @@ from pathlib import Path
 from fontTools.ttLib import TTFont
 from fpdf import FPDF
 
-from app.builder.layout import BULLET_GLYPH, Block, build_blocks
+from app.builder.layout import Block, build_blocks
 from app.builder.templates import Style, resolve_style
 from app.core.config import get_settings
 from app.schemas.resume import ResumeDocument
@@ -33,6 +33,16 @@ FONT_FILES = {
                "I": "lmsans10-oblique.otf", "BI": "lmsans10-boldoblique.otf"},
     "sourcesans": {"": "SourceSans3-Regular.ttf", "B": "SourceSans3-Bold.ttf",
                    "I": "SourceSans3-It.ttf", "BI": "SourceSans3-BoldIt.ttf"},
+    "ebgaramond": {"": "EBGaramond-Regular.otf", "B": "EBGaramond-Bold.otf",
+                   "I": "EBGaramond-Italic.otf", "BI": "EBGaramond-BoldItalic.otf"},
+    "charter": {"": "XCharter-Roman.otf", "B": "XCharter-Bold.otf",
+                "I": "XCharter-Italic.otf", "BI": "XCharter-BoldItalic.otf"},
+    "lato": {"": "Lato-Regular.ttf", "B": "Lato-Bold.ttf", "I": "Lato-Italic.ttf", "BI": "Lato-BoldItalic.ttf"},
+    "roboto": {"": "Roboto-Regular.otf", "B": "Roboto-Bold.otf",
+               "I": "Roboto-Italic.otf", "BI": "Roboto-BoldItalic.otf"},
+    # Roboto Slab has no italics; its upright faces stand in (the preview does the same).
+    "robotoslab": {"": "RobotoSlab-Regular.otf", "B": "RobotoSlab-Bold.otf",
+                   "I": "RobotoSlab-Regular.otf", "BI": "RobotoSlab-Bold.otf"},
 }
 FONT_SEARCH_DIRS = [
     "/usr/share/fonts/truetype/dejavu",
@@ -53,10 +63,11 @@ SMALLCAPS_SCALE = 0.8
 BULLET_INDENT = 4.5
 BULLET_GLYPH_X = 1.0
 ASIDE_GAP = 3.0
+SHORT_BAR = 12.0  # mm, the "short" heading style's underline
 
 _FALLBACK_REPLACEMENTS = {
     "–": "-", "—": "-", "‘": "'", "’": "'", "“": '"',
-    "”": '"', "•": "-", "…": "...", " ": " ",
+    "”": '"', "•": "-", "›": ">", "…": "...", " ": " ",
 }
 
 
@@ -144,7 +155,7 @@ class _ResumePDF(FPDF):
             self.ln(0.6)
         elif block.kind == "headline":
             self.use("", size + 1.5)
-            self.set_text_color(*TEXT)
+            self.set_text_color(*(st.accent_rgb if st.headline_color == "accent" else TEXT))
             self.multi_cell(self.epw, self.lh(size + 1.5), text, align=align, new_x="LMARGIN", new_y="NEXT")
             self.ln(0.4)
         elif block.kind == "contact":
@@ -169,7 +180,7 @@ class _ResumePDF(FPDF):
             self.set_x(self.l_margin + BULLET_GLYPH_X)
             # The trailing space is a real character, so extractors always
             # separate the glyph from the text however narrow the font's bullet.
-            self.cell(BULLET_INDENT - BULLET_GLYPH_X, h, self.clean(BULLET_GLYPH) + " ")
+            self.cell(BULLET_INDENT - BULLET_GLYPH_X, h, self.clean(st.bullet) + " ")
             self.multi_cell(self.epw - BULLET_INDENT, h, text, new_x="LMARGIN", new_y="NEXT")
         elif block.kind == "skill":
             h = self.lh(size)
@@ -251,6 +262,19 @@ class _ResumePDF(FPDF):
             self.set_line_width(0.3)
             self.line(left, y + h + 0.3, right, y + h + 0.3)
             self.set_y(y + h + 1.8)
+        elif st.heading_style == "double":
+            self.set_line_width(0.29)
+            self.line(left, y + h + 0.3, right, y + h + 0.3)
+            self.line(left, y + h + 0.9, right, y + h + 0.9)
+            self.set_y(y + h + 2.4)
+        elif st.heading_style == "short":
+            # A short, thick accent bar under the heading text (a stroked line,
+            # not a filled rectangle, so no parser mistakes it for a table cell).
+            self.set_draw_color(*st.accent_rgb)
+            self.set_line_width(0.8)
+            start = x + (total - SHORT_BAR) / 2 if st.heading_align == "center" else x
+            self.line(start, y + h + 0.6, start + SHORT_BAR, y + h + 0.6)
+            self.set_y(y + h + 2.2)
         elif st.heading_style == "line":
             self.set_line_width(0.4)
             mid = baseline - 0.3 * size * PT

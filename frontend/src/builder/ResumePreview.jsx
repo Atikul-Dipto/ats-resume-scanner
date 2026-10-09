@@ -42,6 +42,7 @@ export function paperVars(style) {
     "--rp-accent": style.accent,
     "--rp-rule": ruleColor(style),
     "--rp-header-align": style.header_align,
+    "--rp-bullet": JSON.stringify(style.bullet), // a quoted string, as CSS `content` needs
   };
 }
 
@@ -60,7 +61,7 @@ function BlockContent({ block, previous, style }) {
     case "name":
       return <h1 className="rp-name">{block.text}</h1>;
     case "headline":
-      return <p className="rp-headline">{block.text}</p>;
+      return <p className={`rp-headline${style.headline_color === "accent" ? " rp-headline--accent" : ""}`}>{block.text}</p>;
     case "contact":
       return <p className="rp-contact">{block.text}</p>;
     case "heading": {

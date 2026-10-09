@@ -174,7 +174,7 @@ export function buildBlocks(doc, style = resolveStyle(doc)) {
   if (b.name) blocks.push(block("name", style.name_case === "upper" ? b.name.toUpperCase() : b.name));
   if (b.headline) blocks.push(block("headline", b.headline));
   const parts = [b.email, b.phone, b.location, ...b.links.map((l) => l.url)].filter(Boolean);
-  if (parts.length) blocks.push(block("contact", parts.join(" | "), { parts }));
+  if (parts.length) blocks.push(block("contact", parts.join(` ${style.contact_separator} `), { parts }));
 
   for (const key of style.section_order) {
     const body = SECTION_BUILDERS[key](doc, style);

@@ -1,8 +1,9 @@
-import { useId } from "react";
+import { useId, useState } from "react";
 import { isBlank, moveItem } from "./model.js";
 import { ResumeThumbnail } from "./ResumePreview.jsx";
 import {
   ACCENT_SWATCHES,
+  CATEGORIES,
   FONT_CSS,
   FONTS,
   SECTION_TITLES,
@@ -47,12 +48,12 @@ const SAMPLE = {
   certifications: [],
 };
 
-function Segmented({ label, value, options, onChange }) {
+function Segmented({ label, value, options, onChange, wrap = false }) {
   const id = useId();
   return (
     <div className="design-field">
       <span className="field-label" id={id}>{label}</span>
-      <div className="seg-group seg-group--fill" role="radiogroup" aria-labelledby={id}>
+      <div className={`seg-group seg-group--fill${wrap ? " seg-group--wrap" : ""}`} role="radiogroup" aria-labelledby={id}>
         {options.map(([optValue, optLabel, optStyle]) => (
           <button
             key={optValue}
@@ -85,7 +86,9 @@ function Slider({ label, value, min, max, step, unit, onChange }) {
 }
 
 export default function DesignPanel({ document: doc, onChange }) {
+  const [category, setCategory] = useState("All");
   const style = resolveStyle(doc);
+  const visible = TEMPLATE_IDS.filter((id) => category === "All" || TEMPLATES[id].category === category);
   const preset = TEMPLATES[doc.template].style;
   const overrides = Object.entries(doc.style || {}).filter(([, v]) => v !== null && v !== undefined);
   const thumbSource = isBlank(doc) ? SAMPLE : doc;
@@ -111,8 +114,20 @@ export default function DesignPanel({ document: doc, onChange }) {
         with standard headings: no tables, text boxes, images or header/footer contact details.
       </div>
 
+      <div className="template-filters" role="group" aria-label="Filter templates">
+        {["All", ...CATEGORIES].map((c) => {
+          const count = c === "All" ? TEMPLATE_IDS.length : TEMPLATE_IDS.filter((id) => TEMPLATES[id].category === c).length;
+          return (
+            <button key={c} type="button" className={`filter-chip${category === c ? " is-active" : ""}`}
+              aria-pressed={category === c} onClick={() => setCategory(c)}>
+              {c} <span>{count}</span>
+            </button>
+          );
+        })}
+      </div>
+
       <div className="template-gallery" role="radiogroup" aria-label="Template">
-        {TEMPLATE_IDS.map((id) => {
+        {visible.map((id) => {
           const t = TEMPLATES[id];
           const selected = doc.template === id;
           return (
@@ -127,7 +142,7 @@ export default function DesignPanel({ document: doc, onChange }) {
             >
               <ResumeThumbnail document={{ ...thumbSource, template: id, style: {} }} width={128} />
               <span className="template-card__name">{t.label}</span>
-              <span className="template-card__credit">{t.inspired_by ? `LaTeX · ${t.inspired_by.split(" (")[0]}` : "Prottoy original"}</span>
+              <span className="template-card__credit">{t.inspired_by ? `LaTeX · ${t.inspired_by.split(" (")[0]}` : `${t.category} · original`}</span>
             </button>
           );
         })}
@@ -160,12 +175,18 @@ export default function DesignPanel({ document: doc, onChange }) {
 
       <fieldset className="design-group">
         <legend>Typography</legend>
-        <Segmented
-          label="Font"
-          value={style.font}
-          onChange={(v) => set("font", v)}
-          options={Object.entries(FONTS).map(([key, f]) => [key, f.label, { fontFamily: FONT_CSS[key] }])}
-        />
+        <div className="design-field">
+          <span className="field-label">Font</span>
+          <div className="font-grid" role="radiogroup" aria-label="Font">
+            {Object.entries(FONTS).map(([key, f]) => (
+              <button key={key} type="button" role="radio" aria-checked={style.font === key}
+                className={`font-option${style.font === key ? " is-active" : ""}`} style={{ fontFamily: FONT_CSS[key] }}
+                onClick={() => set("font", key)}>
+                <span className="font-option__sample">Aa</span> {f.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <p className="field-hint">{FONTS[style.font].detail}. Word files use {FONTS[style.font].docx}.</p>
         <Slider label="Body size" value={style.font_size} min={8.5} max={12.5} step={0.5} unit=" pt" onChange={(v) => set("font_size", v)} />
         <Slider label="Name size" value={style.name_size} min={14} max={32} step={1} unit=" pt" onChange={(v) => set("name_size", v)} />
@@ -181,14 +202,20 @@ export default function DesignPanel({ document: doc, onChange }) {
           options={[["left", "Left"], ["center", "Centered"]]} />
         <Segmented label="Name" value={style.name_case} onChange={(v) => set("name_case", v)}
           options={[["normal", "As typed"], ["upper", "CAPITALS"]]} />
+        <Segmented label="Headline colour" value={style.headline_color} onChange={(v) => set("headline_color", v)}
+          options={[["text", "Text"], ["accent", "Accent"]]} />
+        <Segmented label="Contact separator" value={style.contact_separator} onChange={(v) => set("contact_separator", v)}
+          options={[["|", "a | b"], ["•", "a • b"], ["·", "a · b"]]} />
         <Segmented label="Dates" value={style.date_position} onChange={(v) => set("date_position", v)}
           options={[["right", "Right-aligned"], ["below", "Below the role"]]} />
+        <Segmented label="Bullets" value={style.bullet} onChange={(v) => set("bullet", v)}
+          options={[["•", "• Dot"], ["–", "– Dash"], ["›", "› Arrow"]]} />
       </fieldset>
 
       <fieldset className="design-group">
         <legend>Section headings</legend>
         <Segmented label="Style" value={style.heading_style} onChange={(v) => set("heading_style", v)}
-          options={[["rule", "Underline"], ["line", "Trailing line"], ["plain", "Plain"]]} />
+          wrap options={[["rule", "Underline"], ["double", "Double rule"], ["short", "Short bar"], ["line", "Trailing line"], ["plain", "Plain"]]} />
         <Segmented label="Case" value={style.heading_case} onChange={(v) => set("heading_case", v)}
           options={[["upper", "UPPER"], ["smallcaps", "Small Caps", { fontVariant: "small-caps" }], ["normal", "Title"]]} />
         <Segmented label="Align" value={style.heading_align} onChange={(v) => set("heading_align", v)}

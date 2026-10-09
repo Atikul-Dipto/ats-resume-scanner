@@ -5,6 +5,7 @@ from typing import get_args
 import pytest
 from pydantic import ValidationError
 
+from app.analysis.ats_scorer import BULLET_LINE_RE
 from app.analysis.pipeline import analyze_document, analyze_parsed
 from app.builder.checks import check_document
 from app.builder.export_docx import render_docx
@@ -294,3 +295,41 @@ def test_latex_source_compiles_to_an_ats_clean_pdf(sample_document, template, tm
     assert all(section["found"] for section in exported["sections"])
     assert exported["content_score"] == editor["content_score"]
     assert exported["keyword_score"] == editor["keyword_score"]
+
+# Every combination of the newer design options still exports ATS-clean and
+# scores like the editor (the per-template tests only cover the presets).
+@pytest.mark.parametrize("options", [
+    {"heading_style": "double", "bullet": "–", "contact_separator": "·", "headline_color": "accent"},
+    {"heading_style": "short", "heading_align": "center", "bullet": "›", "contact_separator": "•"},
+    {"heading_style": "short", "font": "robotoslab", "heading_case": "smallcaps", "date_position": "below"},
+    {"heading_style": "line", "font": "ebgaramond", "heading_align": "center", "name_case": "upper"},
+])
+@pytest.mark.parametrize("render,parse", [(render_pdf, parse_pdf), (render_docx, parse_docx)])
+def test_design_options_stay_ats_clean(sample_document, options, render, parse):
+    doc = ResumeDocument.model_validate({**sample_document, "style": options})
+    editor = analyze_document(doc, None)
+    exported = analyze_parsed(parse(render(doc)), None)
+    assert exported["formatting_issues"] == []
+    assert all(section["found"] for section in exported["sections"])
+    assert exported["content_score"] == editor["content_score"]
+    assert exported["keyword_score"] == editor["keyword_score"]
+
+
+@pytest.mark.parametrize("bullet", ["•", "–", "›"])
+def test_every_bullet_glyph_counts_as_a_bullet(sample_document, bullet):
+    doc = ResumeDocument.model_validate({**sample_document, "style": {"bullet": bullet}})
+    text = render_text(doc)
+    assert f"\n{bullet} Built ETL pipelines" in text
+    assert sum(1 for line in text.splitlines() if BULLET_LINE_RE.match(line)) == 4
+
+
+@pytest.mark.skipif(shutil.which("pdflatex") is None, reason="needs a TeX installation")
+def test_latex_design_options_compile(sample_document, tmp_path):
+    style = {"heading_style": "double", "bullet": "›", "contact_separator": "·", "headline_color": "accent"}
+    for i, extra in enumerate([{}, {"heading_style": "short", "heading_align": "center", "bullet": "–"}]):
+        doc = ResumeDocument.model_validate({**sample_document, "style": {**style, **extra}})
+        (tmp_path / f"r{i}.tex").write_bytes(render_latex(doc))
+        result = subprocess.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", f"r{i}.tex"],
+                                cwd=tmp_path, capture_output=True, timeout=180)
+        assert result.returncode == 0, result.stdout.decode(errors="replace")[-2000:]
+        assert "Built ETL pipelines" in parse_pdf((tmp_path / f"r{i}.pdf").read_bytes())["text"]

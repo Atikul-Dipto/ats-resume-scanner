@@ -1000,6 +1000,97 @@ select option {
   color: var(--text-muted);
 }
 
+/* ---------- Template filters & font picker ---------- */
+
+.template-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: none;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.filter-chip span {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.filter-chip:hover:not(:disabled) {
+  border-color: rgba(var(--accent-rgb), 0.6);
+  filter: none;
+}
+
+.filter-chip.is-active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.16);
+  color: var(--text-strong);
+}
+
+.seg-group--wrap {
+  flex-wrap: wrap;
+}
+
+.seg-group--wrap .seg {
+  flex: 1 1 auto;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.font-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.font-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: none;
+  font-size: 0.86rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  text-align: left;
+}
+
+.font-option__sample {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.font-option:hover:not(:disabled) {
+  border-color: rgba(var(--accent-rgb), 0.6);
+  filter: none;
+}
+
+.font-option.is-active {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.14);
+  color: var(--text-strong);
+}
+
 /* ---------- Scan → builder hand-off ---------- */
 
 .results-cta {

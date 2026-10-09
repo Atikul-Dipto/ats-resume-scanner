@@ -57,9 +57,11 @@ security controls, and decision log.
 - Structured editor for contact info, experience, education, skills, projects, certifications.
 - Live score while typing (debounced, ~6 ms server-side), with coaching shown under the exact
   bullet that's weak and one-click adds for keywords missing from the target job.
-- Six templates, including four modelled on popular LaTeX resumes (Jake's Resume, moderncv,
-  Awesome-CV, Harvard-style "Ivy"), all single-column and ATS-safe. Customize font, accent
-  colour, sizes, margins, spacing, heading style, date placement, paper size and section order.
+- 18 templates in six categories (LaTeX classics, Modern, Professional, Minimal, Creative,
+  Academic), including single-column adaptations of popular Overleaf CVs (Jake's Resume,
+  moderncv, Awesome-CV, AltaCV, Deedy, CurVe), all ATS-safe. Customize the font (eight bundled
+  faces), accent colour, sizes, margins, spacing, heading style, bullets, separators, date
+  placement, paper size and section order.
 - A page-accurate preview: real A4/Letter pages in the same fonts as the PDF, with zoom,
   margin guides, full-screen mode and an "Exact PDF" view of the server-rendered file.
 - Export to single-column, text-based PDF, DOCX or LaTeX source (or open it straight in

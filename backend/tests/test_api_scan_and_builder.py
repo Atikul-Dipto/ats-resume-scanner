@@ -1,10 +1,11 @@
 import json
+from typing import get_args
 
 from app.builder.export_docx import render_docx
 from app.builder.export_pdf import render_pdf
 from app.matching.store import fetch_resume_scans
 from app.parsers.pdf_parser import parse_pdf
-from app.schemas.resume import ResumeDocument
+from app.schemas.resume import ResumeDocument, TemplateId
 
 
 def _pdf(sample_document) -> bytes:
@@ -53,7 +54,7 @@ def test_export_pdf_and_docx(client, sample_document):
 
 
 def test_export_latex_for_every_template(client, sample_document):
-    for template in ("classic", "compact", "jake", "moderncv", "awesome", "ivy"):
+    for template in get_args(TemplateId):
         tex = client.post("/api/builder/export/tex", json={"document": {**sample_document, "template": template}})
         assert tex.status_code == 200, template
         assert tex.headers["content-type"].startswith("application/x-tex")

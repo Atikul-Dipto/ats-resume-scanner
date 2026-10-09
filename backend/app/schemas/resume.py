@@ -91,7 +91,12 @@ class CertificationItem(_Strict):
         return value
 
 
-TemplateId = Literal["classic", "compact", "jake", "moderncv", "awesome", "ivy"]
+TemplateId = Literal[
+    "classic", "compact", "jake", "moderncv", "awesome", "ivy",
+    "altacv", "deedy", "curve", "executive", "corporate", "swiss",
+    "minimal", "nordic", "tech", "bold", "elegant", "academic",
+]
+FontId = Literal["lmroman", "lmsans", "sourcesans", "ebgaramond", "charter", "lato", "roboto", "robotoslab"]
 SectionKey = Literal["summary", "experience", "education", "skills", "projects", "certifications"]
 HexColor = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^#[0-9A-Fa-f]{6}$")]
 
@@ -101,7 +106,7 @@ class ResumeStyle(_Strict):
     own value (see builder/templates.json), so switching templates restyles
     everything the user hasn't explicitly changed."""
 
-    font: Literal["lmroman", "lmsans", "sourcesans"] | None = None
+    font: FontId | None = None
     font_size: Annotated[float, Field(ge=8.5, le=12.5)] | None = None
     name_size: Annotated[float, Field(ge=14, le=32)] | None = None
     margin: Annotated[float, Field(ge=8, le=30)] | None = None
@@ -109,12 +114,16 @@ class ResumeStyle(_Strict):
     accent: HexColor | None = None
     header_align: Literal["left", "center"] | None = None
     name_case: Literal["normal", "upper"] | None = None
-    heading_style: Literal["rule", "line", "plain"] | None = None
+    heading_style: Literal["rule", "double", "line", "short", "plain"] | None = None
     heading_case: Literal["upper", "smallcaps", "normal"] | None = None
     heading_align: Literal["left", "center"] | None = None
     date_position: Literal["right", "below"] | None = None
     paper: Literal["a4", "letter"] | None = None
     section_order: Annotated[list[SectionKey], Field(max_length=12)] | None = None
+    # Glyphs every ATS (and the scanner's bullet detection) reads as separators/bullets.
+    contact_separator: Literal["|", "•", "·"] | None = None
+    bullet: Literal["•", "–", "›"] | None = None
+    headline_color: Literal["text", "accent"] | None = None
 
 
 class ResumeDocument(_Strict):

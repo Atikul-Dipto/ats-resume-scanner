@@ -11,7 +11,7 @@ install has (see "docx" in templates.json).
 import io
 
 from docx import Document
-from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_LINE_SPACING, WD_TAB_ALIGNMENT, WD_UNDERLINE
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 from docx.shared import Mm, Pt, RGBColor
@@ -26,11 +26,11 @@ STRONG = RGBColor(0x11, 0x18, 0x27)
 MUTED = RGBColor(0x4B, 0x55, 0x63)
 
 
-def _bottom_border(paragraph, rgb: tuple[int, int, int], size_eighths: int) -> None:
+def _bottom_border(paragraph, rgb: tuple[int, int, int], size_eighths: int, kind: str = "single") -> None:
     p_pr = paragraph._p.get_or_add_pPr()
     borders = OxmlElement("w:pBdr")
     bottom = OxmlElement("w:bottom")
-    bottom.set(qn("w:val"), "single")
+    bottom.set(qn("w:val"), kind)
     bottom.set(qn("w:sz"), str(size_eighths))
     bottom.set(qn("w:space"), "1")
     bottom.set(qn("w:color"), "{:02X}{:02X}{:02X}".format(*rgb))
@@ -86,7 +86,8 @@ def render_docx(doc: ResumeDocument) -> bytes:
             para = paragraph(leading_pt=style.name_size * NAME_LEADING, align=header_align)
             run(para, block.text, pt=style.name_size, bold=True, color=accent)
         elif kind == "headline":
-            run(paragraph(align=header_align), block.text, pt=size + 1.5)
+            run(paragraph(align=header_align), block.text, pt=size + 1.5,
+                color=accent if style.headline_color == "accent" else TEXT)
         elif kind == "contact":
             run(paragraph(align=header_align), block.text, pt=size - 0.5, color=MUTED)
         elif kind == "heading":
@@ -98,16 +99,23 @@ def render_docx(doc: ResumeDocument) -> bytes:
             )
             para.paragraph_format.space_after = Pt(3)
             para.paragraph_format.keep_with_next = True
+            runs = []
             if style.heading_case == "smallcaps":
                 for i, word in enumerate(block.text.split(" ")):
                     if i:
-                        run(para, " ", pt=heading_pt * SMALLCAPS_SCALE, bold=True, color=accent)
-                    run(para, word[:1], pt=heading_pt, bold=True, color=accent)
+                        runs.append(run(para, " ", pt=heading_pt * SMALLCAPS_SCALE, bold=True, color=accent))
+                    runs.append(run(para, word[:1], pt=heading_pt, bold=True, color=accent))
                     if word[1:]:
-                        run(para, word[1:], pt=heading_pt * SMALLCAPS_SCALE, bold=True, color=accent)
+                        runs.append(run(para, word[1:], pt=heading_pt * SMALLCAPS_SCALE, bold=True, color=accent))
             else:
-                run(para, block.text, pt=heading_pt, bold=True, color=accent)
-            if style.heading_style != "plain":
+                runs.append(run(para, block.text, pt=heading_pt, bold=True, color=accent))
+            if style.heading_style == "short":
+                # Word borders span the column, so the short bar becomes a thick underline.
+                for r in runs:
+                    r.font.underline = WD_UNDERLINE.THICK
+            elif style.heading_style == "double":
+                _bottom_border(para, style.rule_rgb, 6, kind="double")
+            elif style.heading_style != "plain":
                 _bottom_border(para, style.rule_rgb, 6 if style.heading_style == "rule" else 8)
         elif kind == "entry_title":
             gap = 0 if previous is not None and previous.kind == "heading" else 3
