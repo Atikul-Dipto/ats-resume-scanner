@@ -154,7 +154,7 @@ def build_blocks(doc: ResumeDocument, style: Style | None = None) -> list[Block]
         blocks.append(Block("headline", basics.headline))
     parts = tuple(p for p in (basics.email, basics.phone, basics.location, *(link.url for link in basics.links)) if p)
     if parts:
-        blocks.append(Block("contact", SEPARATOR.join(parts), parts=parts))
+        blocks.append(Block("contact", f" {style.contact_separator} ".join(parts), parts=parts))
 
     for key in style.section_order:
         body = SECTION_BUILDERS[key](doc, style)
@@ -164,21 +164,19 @@ def build_blocks(doc: ResumeDocument, style: Style | None = None) -> list[Block]
     return blocks
 
 
-BULLET_GLYPH = "•"
-
-
-def block_line(block: Block) -> str:
+def block_line(block: Block, bullet: str = "•") -> str:
     """One block as the single line of text an ATS extracts from the files."""
     if block.kind == "bullet":
-        return f"{BULLET_GLYPH} {block.text}"
+        return f"{bullet} {block.text}"
     return _join(block.text, block.aside, sep=" ")
 
 
 def render_text(doc: ResumeDocument) -> str:
     """Plain text in the same order and wording as the exported files."""
+    style = resolve_style(doc)
     lines: list[str] = []
-    for block in build_blocks(doc):
+    for block in build_blocks(doc, style):
         if block.kind == "heading" and lines:
             lines.append("")
-        lines.append(block_line(block))
+        lines.append(block_line(block, style.bullet))
     return "\n".join(lines)

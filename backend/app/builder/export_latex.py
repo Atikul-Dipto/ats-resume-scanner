@@ -46,7 +46,15 @@ _FONT_SETUP = {
     "lmsans": (r"\usepackage{lmodern}" "\n" r"  \renewcommand{\familydefault}{\sfdefault}",
                _LUA_FALLBACK % ("Sans", "Sans")),
     "sourcesans": (r"\usepackage[default]{sourcesanspro}", r"\usepackage[default]{sourcesanspro}"),
+    # These packages pick Type 1 or OpenType files to suit the engine themselves.
+    "ebgaramond": (r"\usepackage{ebgaramond}", r"\usepackage{ebgaramond}"),
+    "charter": (r"\usepackage{XCharter}", r"\usepackage{XCharter}"),
+    "lato": (r"\usepackage[default]{lato}", r"\usepackage[default]{lato}"),
+    "roboto": (r"\usepackage[sfdefault]{roboto}", r"\usepackage[sfdefault]{roboto}"),
+    "robotoslab": (r"\usepackage[rm]{roboto}", r"\usepackage[rm]{roboto}"),
 }
+_BULLETS = {"•": r"\textbullet", "–": r"\textendash", "›": r"\guilsinglright"}
+_SEPARATORS = {"|": r"\textbar{}", "•": r"\textbullet{}", "·": r"\textperiodcentered{}"}
 
 PT = 25.4 / 72
 
@@ -83,9 +91,18 @@ def _section_macro(style: Style) -> str:
     title = rf"{{{size}\bfseries{case}\color{{accent}}#1}}"
     before = rf"\vspace{{{style.font_size * style.line_height * PT * 0.75:.2f}mm}}"
     centered = style.heading_align == "center"
+    heading_line = rf"{{\centering {title}\par}}" if centered else rf"{title}\par"
     if style.heading_style == "rule":
-        body = (rf"{{\centering {title}\par}}" if centered else rf"{title}\par") + (
-            r"\vspace{0.3mm}{\color{rulecolor}\hrule height 0.3mm}\vspace{1.5mm}"
+        body = heading_line + r"\vspace{0.3mm}{\color{rulecolor}\hrule height 0.3mm}\vspace{1.5mm}"
+    elif style.heading_style == "double":
+        body = heading_line + (
+            r"\vspace{0.15mm}{\color{rulecolor}\hrule height 0.29mm\vspace{0.31mm}\hrule height 0.29mm}"
+            r"\vspace{1.5mm}"
+        )
+    elif style.heading_style == "short":
+        bar = r"{\color{accent}\rule{12mm}{0.8mm}}"
+        body = heading_line + r"\vspace{0.2mm}" + (rf"{{\centering {bar}\par}}" if centered else rf"{bar}\par") + (
+            r"\vspace{1.2mm}"
         )
     elif style.heading_style == "line":
         fill = r"{\color{rulecolor}\leaders\hrule height 0.62ex depth -0.5ex\hfill}"
@@ -138,7 +155,7 @@ def _preamble(doc: ResumeDocument, style: Style, unicode_engine: bool) -> str:
         r"\setlength{\parindent}{0pt}",
         r"\setlength{\parskip}{0pt}",
         r"\setlist[itemize]{leftmargin=4.5mm,labelsep=2mm,itemsep=0pt,topsep=0pt,parsep=0pt,partopsep=0pt,"
-        r"label=\textbullet}",
+        rf"label={_BULLETS[style.bullet]}}}",
         _section_macro(style),
         r"\newcommand{\entry}[2]{\par\noindent\textbf{#1}\hfill{\itshape\color{muted}#2}\par}",
         rf"\newcommand{{\metasize}}{{{_size(style.font_size - 0.5, style.line_height * style.font_size / (style.font_size - 0.5))}}}",
@@ -173,9 +190,10 @@ def _body(blocks: list[Block], style: Style) -> list[str]:
         if block.kind == "name":
             header.append(rf"{{{_size(style.name_size, 1.2)}\bfseries\color{{accent}}{text}\par}}\vspace{{0.6mm}}")
         elif block.kind == "headline":
-            header.append(rf"{{{_size(style.font_size + 1.5, style.line_height)}{text}\par}}")
+            color = r"\color{accent}" if style.headline_color == "accent" else ""
+            header.append(rf"{{{_size(style.font_size + 1.5, style.line_height)}{color}{text}\par}}")
         elif block.kind == "contact":
-            items = r" \textbar{} ".join(_contact_item(p) for p in block.parts)
+            items = f" {_SEPARATORS[style.contact_separator]} ".join(_contact_item(p) for p in block.parts)
             header.append(rf"{{\metasize\color{{muted}}{items}\par}}")
         else:
             if header:

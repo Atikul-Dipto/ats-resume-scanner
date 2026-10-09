@@ -7,7 +7,7 @@ ACTION_VERBS = {
     "spearheaded", "streamlined", "generated", "grew", "negotiated", "orchestrated",
 }
 
-BULLET_LINE_RE = re.compile(r"^\s*[•\-\*•●‣]\s*(.+)")
+BULLET_LINE_RE = re.compile(r"^\s*[•\-\*•●‣–›▪◦]\s*(.+)")
 NUMBER_RE = re.compile(r"\d")
 
 SEVERITY_PENALTY = {"critical": 15, "warning": 7, "info": 2}

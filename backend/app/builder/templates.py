@@ -39,6 +39,9 @@ class Style:
     date_position: str
     paper: str
     section_order: tuple[str, ...]
+    contact_separator: str
+    bullet: str
+    headline_color: str
 
     @property
     def accent_rgb(self) -> tuple[int, int, int]:
@@ -46,8 +49,9 @@ class Style:
 
     @property
     def rule_rgb(self) -> tuple[int, int, int]:
-        """Rules are the accent, lightened, so a black accent still gets a soft line."""
-        return mix_with_white(self.accent_rgb, 0.45 if self.heading_style == "rule" else 0.2)
+        """Rules are the accent, lightened, so a black accent still gets a soft line.
+        (The "short" style's bar uses the accent itself.)"""
+        return mix_with_white(self.accent_rgb, 0.45 if self.heading_style in ("rule", "double") else 0.2)
 
     @property
     def page_mm(self) -> tuple[float, float]:

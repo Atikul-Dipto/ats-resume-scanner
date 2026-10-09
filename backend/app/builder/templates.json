@@ -14,9 +14,41 @@
       "label": "Modern Sans",
       "detail": "Source Sans 3: Awesome-CV's body face",
       "docx": "Calibri"
+    },
+    "ebgaramond": {
+      "label": "Garamond",
+      "detail": "EB Garamond: the classic book serif",
+      "docx": "Garamond"
+    },
+    "charter": {
+      "label": "Charter",
+      "detail": "Charter (XCharter): a sturdy, highly readable serif",
+      "docx": "Georgia"
+    },
+    "lato": {
+      "label": "Lato",
+      "detail": "Lato: the humanist sans of AltaCV and Deedy",
+      "docx": "Calibri"
+    },
+    "roboto": {
+      "label": "Roboto",
+      "detail": "Roboto: a crisp, neutral modern sans",
+      "docx": "Arial"
+    },
+    "robotoslab": {
+      "label": "Roboto Slab",
+      "detail": "Roboto Slab: a confident slab serif",
+      "docx": "Rockwell"
     }
   },
-  "sections": ["summary", "experience", "education", "skills", "projects", "certifications"],
+  "sections": [
+    "summary",
+    "experience",
+    "education",
+    "skills",
+    "projects",
+    "certifications"
+  ],
   "section_titles": {
     "summary": "Summary",
     "experience": "Experience",
@@ -26,8 +58,14 @@
     "certifications": "Certifications"
   },
   "paper": {
-    "a4": [210, 297],
-    "letter": [215.9, 279.4]
+    "a4": [
+      210,
+      297
+    ],
+    "letter": [
+      215.9,
+      279.4
+    ]
   },
   "templates": {
     "classic": {
@@ -48,8 +86,19 @@
         "heading_align": "left",
         "date_position": "below",
         "paper": "a4",
-        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
-      }
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "Professional"
     },
     "compact": {
       "label": "Compact",
@@ -69,8 +118,19 @@
         "heading_align": "left",
         "date_position": "right",
         "paper": "a4",
-        "section_order": ["summary", "experience", "skills", "education", "projects", "certifications"]
-      }
+        "section_order": [
+          "summary",
+          "experience",
+          "skills",
+          "education",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "Minimal"
     },
     "jake": {
       "label": "Jake's Resume",
@@ -90,8 +150,19 @@
         "heading_align": "left",
         "date_position": "right",
         "paper": "a4",
-        "section_order": ["summary", "education", "experience", "projects", "skills", "certifications"]
-      }
+        "section_order": [
+          "summary",
+          "education",
+          "experience",
+          "projects",
+          "skills",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "LaTeX classics"
     },
     "moderncv": {
       "label": "ModernCV",
@@ -111,8 +182,19 @@
         "heading_align": "left",
         "date_position": "right",
         "paper": "a4",
-        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
-      }
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "LaTeX classics"
     },
     "awesome": {
       "label": "Awesome CV",
@@ -132,8 +214,19 @@
         "heading_align": "left",
         "date_position": "right",
         "paper": "a4",
-        "section_order": ["summary", "experience", "education", "skills", "projects", "certifications"]
-      }
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "LaTeX classics"
     },
     "ivy": {
       "label": "Ivy",
@@ -153,8 +246,411 @@
         "heading_align": "center",
         "date_position": "right",
         "paper": "a4",
-        "section_order": ["summary", "education", "experience", "skills", "projects", "certifications"]
+        "section_order": [
+          "summary",
+          "education",
+          "experience",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      },
+      "category": "LaTeX classics"
+    },
+    "altacv": {
+      "label": "AltaCV",
+      "inspired_by": "LianTze Lim's AltaCV class (single-column adaptation)",
+      "category": "LaTeX classics",
+      "tagline": "Lato with a purple accent headline and bold ruled headings, minus the ATS-unfriendly sidebar.",
+      "style": {
+        "font": "lato",
+        "font_size": 10,
+        "name_size": 24,
+        "margin": 15,
+        "line_height": 1.4,
+        "accent": "#3E0097",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "accent"
+      }
+    },
+    "deedy": {
+      "label": "Deedy",
+      "inspired_by": "Debarghya Das's Deedy resume (single-column adaptation)",
+      "category": "LaTeX classics",
+      "tagline": "Big capitalised name and quiet grey headings, rebuilt in one ATS-safe column.",
+      "style": {
+        "font": "lato",
+        "font_size": 10,
+        "name_size": 28,
+        "margin": 14,
+        "line_height": 1.35,
+        "accent": "#3B3B3B",
+        "header_align": "left",
+        "name_case": "upper",
+        "heading_style": "plain",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      }
+    },
+    "curve": {
+      "label": "CurVe",
+      "inspired_by": "Didier Verna's CurVe class, as customised by LianTze Lim",
+      "category": "LaTeX classics",
+      "tagline": "Charter serif with centred headings framed by rules on both sides.",
+      "style": {
+        "font": "charter",
+        "font_size": 10.5,
+        "name_size": 22,
+        "margin": 18,
+        "line_height": 1.4,
+        "accent": "#1A5276",
+        "header_align": "center",
+        "name_case": "normal",
+        "heading_style": "line",
+        "heading_case": "smallcaps",
+        "heading_align": "center",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "•",
+        "headline_color": "text"
+      }
+    },
+    "executive": {
+      "label": "Executive",
+      "inspired_by": "",
+      "category": "Professional",
+      "tagline": "Charter serif, navy capitals and a double rule: built for senior roles.",
+      "style": {
+        "font": "charter",
+        "font_size": 10.5,
+        "name_size": 22,
+        "margin": 18,
+        "line_height": 1.4,
+        "accent": "#1F3A5F",
+        "header_align": "left",
+        "name_case": "upper",
+        "heading_style": "double",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "text"
+      }
+    },
+    "corporate": {
+      "label": "Corporate",
+      "inspired_by": "",
+      "category": "Professional",
+      "tagline": "Lato with a steel-blue headline and trailing-line headings.",
+      "style": {
+        "font": "lato",
+        "font_size": 10.5,
+        "name_size": 24,
+        "margin": 17,
+        "line_height": 1.4,
+        "accent": "#0F4C81",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "line",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "accent"
+      }
+    },
+    "swiss": {
+      "label": "Swiss",
+      "inspired_by": "",
+      "category": "Professional",
+      "tagline": "Roboto in black: capitalised name, heavy rules, dot separators.",
+      "style": {
+        "font": "roboto",
+        "font_size": 10,
+        "name_size": 24,
+        "margin": 16,
+        "line_height": 1.4,
+        "accent": "#111111",
+        "header_align": "left",
+        "name_case": "upper",
+        "heading_style": "rule",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "•",
+        "headline_color": "text"
+      }
+    },
+    "minimal": {
+      "label": "Minimal",
+      "inspired_by": "",
+      "category": "Minimal",
+      "tagline": "Lato with generous white space, plain grey headings and dash bullets.",
+      "style": {
+        "font": "lato",
+        "font_size": 10,
+        "name_size": 22,
+        "margin": 20,
+        "line_height": 1.5,
+        "accent": "#4B5563",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "plain",
+        "heading_case": "normal",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "–",
+        "headline_color": "text"
+      }
+    },
+    "nordic": {
+      "label": "Nordic",
+      "inspired_by": "",
+      "category": "Minimal",
+      "tagline": "Roboto, a calm teal accent and airy spacing.",
+      "style": {
+        "font": "roboto",
+        "font_size": 10,
+        "name_size": 22,
+        "margin": 20,
+        "line_height": 1.5,
+        "accent": "#0F766E",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "plain",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "–",
+        "headline_color": "text"
+      }
+    },
+    "tech": {
+      "label": "Tech",
+      "inspired_by": "",
+      "category": "Modern",
+      "tagline": "Roboto with short accent underlines and arrow bullets: engineering-friendly.",
+      "style": {
+        "font": "roboto",
+        "font_size": 10,
+        "name_size": 24,
+        "margin": 15,
+        "line_height": 1.4,
+        "accent": "#0A66C2",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "short",
+        "heading_case": "upper",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "›",
+        "headline_color": "accent"
+      }
+    },
+    "bold": {
+      "label": "Bold",
+      "inspired_by": "",
+      "category": "Creative",
+      "tagline": "Roboto Slab in violet with a big name and short underlines. Stands out, still parses.",
+      "style": {
+        "font": "robotoslab",
+        "font_size": 10,
+        "name_size": 28,
+        "margin": 16,
+        "line_height": 1.4,
+        "accent": "#7C3AED",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "short",
+        "heading_case": "normal",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "|",
+        "bullet": "•",
+        "headline_color": "accent"
+      }
+    },
+    "elegant": {
+      "label": "Elegant",
+      "inspired_by": "",
+      "category": "Creative",
+      "tagline": "EB Garamond, centred, small-caps headings in a warm brown.",
+      "style": {
+        "font": "ebgaramond",
+        "font_size": 11.5,
+        "name_size": 26,
+        "margin": 18,
+        "line_height": 1.35,
+        "accent": "#5B3A29",
+        "header_align": "center",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "smallcaps",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "experience",
+          "education",
+          "skills",
+          "projects",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "•",
+        "headline_color": "text"
+      }
+    },
+    "academic": {
+      "label": "Academic",
+      "inspired_by": "",
+      "category": "Academic",
+      "tagline": "EB Garamond with education first and quiet title-case headings, for research and teaching CVs.",
+      "style": {
+        "font": "ebgaramond",
+        "font_size": 11.5,
+        "name_size": 22,
+        "margin": 20,
+        "line_height": 1.35,
+        "accent": "#1F2937",
+        "header_align": "left",
+        "name_case": "normal",
+        "heading_style": "rule",
+        "heading_case": "normal",
+        "heading_align": "left",
+        "date_position": "right",
+        "paper": "a4",
+        "section_order": [
+          "summary",
+          "education",
+          "experience",
+          "projects",
+          "skills",
+          "certifications"
+        ],
+        "contact_separator": "·",
+        "bullet": "•",
+        "headline_color": "text"
       }
     }
-  }
+  },
+  "categories": [
+    "LaTeX classics",
+    "Modern",
+    "Professional",
+    "Minimal",
+    "Creative",
+    "Academic"
+  ]
 }

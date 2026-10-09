@@ -133,14 +133,20 @@ flowchart TB
 
 ### Templates and design
 
-- Six templates live in `builder/templates.json`: Classic and Compact, plus
-  four modelled on well-known LaTeX resumes (Jake's Resume, moderncv,
-  Awesome-CV, and the Harvard career-office format as "Ivy"). The frontend
+- Eighteen templates live in `builder/templates.json`, grouped into
+  categories for the gallery. Seven adapt well-known open-licensed LaTeX CVs
+  (Jake's Resume, moderncv, Awesome-CV, Harvard-style "Ivy", AltaCV, Deedy,
+  CurVe) to one ATS-safe column; the rest are original designs. The frontend
   imports the same JSON (`frontend/src/builder/templates.js`), so the preview
-  and the exporters read identical numbers.
+  and the exporters read identical numbers. Adding a template is one JSON
+  entry plus its id in `schemas/resume.py::TemplateId`; the per-template
+  tests pick it up automatically. Designs from commercial builders
+  (Kickresume, Resume.io and similar) are not copied: their terms forbid it.
 - A resume stores `template` plus a `style` of optional overrides (font,
   accent, sizes, margins, spacing, heading style/case/alignment, date
-  placement, paper, section order). `templates.resolve_style()` merges them;
+  placement, paper, section order, bullet glyph, contact separator, headline
+  colour). Bullet and separator choices are limited to glyphs the scanner's
+  bullet pattern (`ats_scorer.BULLET_LINE_RE`) and common ATS parsers read. `templates.resolve_style()` merges them;
   unset fields follow the template, so switching templates restyles everything
   the user didn't deliberately change.
 - Every option is typography inside the one ATS-safe layout. Anything that

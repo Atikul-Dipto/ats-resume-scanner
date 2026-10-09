@@ -16,6 +16,27 @@
 @font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
 @font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-It.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: "Resume Source Sans"; src: url("./fonts/SourceSans3-BoldIt.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume EB Garamond"; src: url("./fonts/EBGaramond-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume EB Garamond"; src: url("./fonts/EBGaramond-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume EB Garamond"; src: url("./fonts/EBGaramond-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume EB Garamond"; src: url("./fonts/EBGaramond-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Charter"; src: url("./fonts/XCharter-Roman.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Charter"; src: url("./fonts/XCharter-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Charter"; src: url("./fonts/XCharter-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Charter"; src: url("./fonts/XCharter-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Lato"; src: url("./fonts/Lato-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Lato"; src: url("./fonts/Lato-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Lato"; src: url("./fonts/Lato-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Lato"; src: url("./fonts/Lato-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Roboto"; src: url("./fonts/Roboto-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Roboto"; src: url("./fonts/Roboto-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Roboto"; src: url("./fonts/Roboto-Italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Roboto"; src: url("./fonts/Roboto-BoldItalic.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
+/* Roboto Slab has no italics: the upright files stand in, exactly as in the PDF. */
+@font-face { font-family: "Resume Roboto Slab"; src: url("./fonts/RobotoSlab-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Roboto Slab"; src: url("./fonts/RobotoSlab-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+@font-face { font-family: "Resume Roboto Slab"; src: url("./fonts/RobotoSlab-Regular.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: "Resume Roboto Slab"; src: url("./fonts/RobotoSlab-Bold.woff2") format("woff2"); font-weight: 700; font-style: italic; font-display: swap; }
 
 .rp-page {
   --rp-text: #1f2937;
@@ -75,6 +96,10 @@
   margin-bottom: 0.4mm;
 }
 
+.rp-headline--accent {
+  color: var(--rp-accent);
+}
+
 .rp-contact {
   font-size: calc((var(--rp-fs) - 0.5) * 1pt);
   color: var(--rp-muted);
@@ -105,6 +130,28 @@
   border-bottom: 0.3mm solid var(--rp-rule);
   padding-bottom: 0.15mm;
   margin-bottom: 1.35mm;
+}
+
+/* Two 0.29 mm rules centred 0.3 mm and 0.9 mm below the line box. */
+.rp-heading--double {
+  border-bottom: 0.88mm double var(--rp-rule);
+  padding-bottom: 0.16mm;
+  margin-bottom: 1.36mm;
+}
+
+/* A 12 mm × 0.8 mm accent bar, its centre 0.6 mm below the line box. */
+.rp-heading--short::after {
+  content: "";
+  display: block;
+  width: 12mm;
+  border-top: 0.8mm solid var(--rp-accent);
+  margin-top: 0.2mm;
+  margin-bottom: 1.2mm;
+}
+
+.rp-heading--short.rp-heading--center::after {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .rp-heading--plain {
@@ -167,7 +214,7 @@
 }
 
 .rp-bullet::before {
-  content: "•";
+  content: var(--rp-bullet, "•");
   position: absolute;
   left: 1mm;
 }

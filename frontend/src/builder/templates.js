@@ -15,7 +15,14 @@ export const FONT_CSS = {
   lmroman: '"Resume LM Roman", "Latin Modern Roman", "Computer Modern", Georgia, serif',
   lmsans: '"Resume LM Sans", "Latin Modern Sans", "Segoe UI", sans-serif',
   sourcesans: '"Resume Source Sans", "Source Sans 3", "Segoe UI", sans-serif',
+  ebgaramond: '"Resume EB Garamond", "EB Garamond", Garamond, serif',
+  charter: '"Resume Charter", "XCharter", Charter, Georgia, serif',
+  lato: '"Resume Lato", Lato, "Segoe UI", sans-serif',
+  roboto: '"Resume Roboto", Roboto, Arial, sans-serif',
+  robotoslab: '"Resume Roboto Slab", "Roboto Slab", Rockwell, serif',
 };
+
+export const CATEGORIES = DATA.categories;
 
 export function normalizeOrder(order) {
   const seen = [...new Set(order || [])].filter((k) => SECTION_KEYS.includes(k));
